@@ -129,7 +129,7 @@ class TigerGraph(Application):
         return None
 
     def mem_limit(self, node: Node) -> Optional[str]:
-        return "4g"
+        return "8g"
 
     def extra(self, topo: Topology):
         try:

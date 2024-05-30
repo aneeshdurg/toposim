@@ -9,28 +9,7 @@ from .application import Application
 from .topology import Node, Topology
 from .utils import print_to_file, print_to_script
 
-
-def generate(prefix: str, filename: str, app: Application):
-    with open(filename) as f:
-        data = json.load(f)
-    os.makedirs(prefix, exist_ok=True)
-    os.chdir(prefix)
-
-    names = set(data.keys())
-    nodes = {}
-    i = 0
-    for k, links in data.items():
-        for l in links:
-            if l not in names:
-                raise Exception(f"Unknown node {l}")
-            assert k in data[l], f"malformed link {k} -> {l}"
-        name = f"{prefix}_{k}"
-        nodes[name] = Node(name, [f"{prefix}_{l}" for l in links])
-        i += 1
-
-    topo = Topology(prefix, nodes)
-
-    app.initialize(topo)
+def generate_docker_compose(app: Application, topo: Topology):
     # Set up docker-compose.yml
     with print_to_file("docker-compose.yml") as output:
         output('version: "2.4"')
@@ -78,26 +57,54 @@ def generate(prefix: str, filename: str, app: Application):
                 for key, val in env.items():
                     output(f'      {key}: "{val}"')
 
+
+def define_run_in_ns(output):
+    output("run_in_ns() {")
+    output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
+    output("  shift")
+    output('  flag="-n"')
+    output("  # if $1 starts with a -, then replace $flag with $1")
+    output("  if [[ $1 == -* ]]; then")
+    output("      flag=$1")
+    output("      shift")
+    output("  fi")
+    output('  sudo nsenter -t $pid $flag "$@"')
+    output("}")
+    output()
+
+    def run_in_ns(name, cmd):
+        output("run_in_ns", name, cmd)
+    return run_in_ns
+
+
+def generate(prefix: str, filename: str, app: Application):
+    with open(filename) as f:
+        data = json.load(f)
+    os.makedirs(prefix, exist_ok=True)
+    os.chdir(prefix)
+
+    names = set(data.keys())
+    nodes = {}
+    i = 0
+    for k, links in data.items():
+        for l in links:
+            if l not in names:
+                raise Exception(f"Unknown node {l}")
+            assert k in data[l], f"malformed link {k} -> {l}"
+        name = f"{prefix}_{k}"
+        nodes[name] = Node(name, [f"{prefix}_{l}" for l in links])
+        i += 1
+
+    topo = Topology(prefix, nodes)
+
+    app.initialize(topo)
+    generate_docker_compose(app, topo)
     app.extra(topo)
 
     # setup networking
     with print_to_script("setup-networking.sh") as output:
         output("set -x")
-        output("run_in_ns() {")
-        output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
-        output("  shift")
-        output('  flag="-n"')
-        output("  # if $1 starts with a -, then replace $flag with $1")
-        output("  if [[ $1 == -* ]]; then")
-        output("      flag=$1")
-        output("      shift")
-        output("  fi")
-        output('  sudo nsenter -t $pid $flag "$@"')
-        output("}")
-        output()
-
-        def run_in_ns(name, cmd):
-            output("run_in_ns", name, cmd)
+        run_in_ns = define_run_in_ns(output)
 
         output("forward() {")
         output("  ", end="")
@@ -169,23 +176,8 @@ def generate(prefix: str, filename: str, app: Application):
 
     with print_to_script("add_delay.sh") as output:
         output("set -x")
-        output("run_in_ns() {")
-        output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
-        output("  shift")
-        output('  flag="-n"')
-        output("  # if $1 starts with a -, then replace $flag with $1")
-        output("  if [[ $1 == -* ]]; then")
-        output("      flag=$1")
-        output("      shift")
-        output("  fi")
-        output('  sudo nsenter -t $pid $flag "$@"')
-        output("}")
-        output()
+        run_in_ns = define_run_in_ns(output)
 
-        def run_in_ns(name, cmd):
-            output("run_in_ns", name, cmd)
-
-        # tc qdisc add dev eth0 root netem delay 2ms
         for p in topo.ports.values():
             for i in range(len(p.networks)):
                 run_in_ns(p.name, f"tc qdisc add dev eth{i} root netem delay 25ms &")
@@ -196,21 +188,7 @@ def generate(prefix: str, filename: str, app: Application):
         # Usage ./mod_delay.sh <delay in ms>
         # note that add_delay must be run at least once
         output("set -x")
-        output("run_in_ns() {")
-        output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
-        output("  shift")
-        output('  flag="-n"')
-        output("  # if $1 starts with a -, then replace $flag with $1")
-        output("  if [[ $1 == -* ]]; then")
-        output("      flag=$1")
-        output("      shift")
-        output("  fi")
-        output('  sudo nsenter -t $pid $flag "$@"')
-        output("}")
-        output()
-
-        def run_in_ns(name, cmd):
-            output("run_in_ns", name, cmd)
+        run_in_ns = define_run_in_ns(output)
 
         for p in topo.ports.values():
             for i in range(len(p.networks)):

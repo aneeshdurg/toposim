@@ -192,6 +192,32 @@ def generate(prefix: str, filename: str, app: Application):
         output("wait")
         output()
 
+    with print_to_script("mod_delay.sh") as output:
+        # Usage ./mod_delay.sh <delay in ms>
+        # note that add_delay must be run at least once
+        output("set -x")
+        output("run_in_ns() {")
+        output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
+        output("  shift")
+        output('  flag="-n"')
+        output("  # if $1 starts with a -, then replace $flag with $1")
+        output("  if [[ $1 == -* ]]; then")
+        output("      flag=$1")
+        output("      shift")
+        output("  fi")
+        output('  sudo nsenter -t $pid $flag "$@"')
+        output("}")
+        output()
+
+        def run_in_ns(name, cmd):
+            output("run_in_ns", name, cmd)
+
+        for p in topo.ports.values():
+            for i in range(len(p.networks)):
+                run_in_ns(p.name, f"tc qdisc change dev eth{i} root netem delay $1ms &")
+        output("wait")
+        output()
+
     with print_to_script("cleanup.sh") as output:
         output("cleanup() {")
         output(f"  docker stop $1")

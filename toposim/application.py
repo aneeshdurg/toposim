@@ -83,7 +83,7 @@ class JanusGraphOnCassandra(Application):
 
     def entrypoint(self, node: Node) -> Optional[str]:
         if node.is_dummy:
-            return "true"
+            return "bash -c true"
         if "client" not in node.name:
             return "bash ./wait.sh"
         return "sleep inf"
@@ -133,7 +133,7 @@ class TigerGraph(Application):
 
     def entrypoint(self, node: Node) -> Optional[str]:
         if node.is_dummy:
-            return "true"
+            return "bash -c true"
         return None
 
     def mem_limit(self, node: Node) -> Optional[str]:

@@ -1,36 +1,9 @@
 {
-  "client": [
-    "test_topo8"
-  ],
-  "test_topo1": [
-    "test_topo2"
-  ],
-  "test_topo2": [
-    "test_topo1",
-    "test_topo3"
-  ],
-  "test_topo3": [
-    "test_topo2",
-    "test_topo4"
-  ],
-  "test_topo4": [
-    "test_topo3",
-    "test_topo5"
-  ],
-  "test_topo5": [
-    "test_topo4",
-    "test_topo6"
-  ],
-  "test_topo6": [
-    "test_topo5",
-    "test_topo7"
-  ],
-  "test_topo7": [
-    "test_topo6",
-    "test_topo8"
-  ],
-  "test_topo8": [
-    "client",
-    "test_topo7"
-  ]
+  "links": {
+    "a": ["r1"],
+    "r1": ["a", "b", "c"],
+    "b": ["r1"],
+    "c": ["r1"]
+  },
+  "dummyNodes": ["r1"]
 }

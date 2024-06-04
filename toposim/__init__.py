@@ -33,7 +33,7 @@ def generate_docker_compose(app: Application, topo: Topology):
             output(f"    networks:")
             for i, net in enumerate(p.networks):
                 output(f"      {net.name}:")
-                output(f"        ipv4_address: {p.ip[i]}")
+                output(f"        ipv4_address: {p.ips[i]}")
 
         for i, node in enumerate(topo.nodes.values()):
             output(f"  {node.name}:")
@@ -77,25 +77,26 @@ def define_run_in_ns(output):
     return run_in_ns
 
 
-def generate(prefix: str, filename: str, app: Application):
+def generate(prefix: str, filename: str, app: Application, subnet32: str):
     with open(filename) as f:
         data = json.load(f)
     os.makedirs(prefix, exist_ok=True)
     os.chdir(prefix)
 
-    names = set(data.keys())
+    names = set(data["links"].keys())
     nodes = {}
     i = 0
-    for k, links in data.items():
+    for k, links in data["links"].items():
         for l in links:
             if l not in names:
                 raise Exception(f"Unknown node {l}")
-            assert k in data[l], f"malformed link {k} -> {l}"
+            assert k in data["links"][l], f"malformed link {k} -> {l}"
         name = f"{prefix}_{k}"
-        nodes[name] = Node(name, [f"{prefix}_{l}" for l in links])
+        print(name, name in data["dummyNodes"])
+        nodes[name] = Node(name, [f"{prefix}_{l}" for l in links], k in data["dummyNodes"])
         i += 1
 
-    topo = Topology(prefix, nodes)
+    topo = Topology(prefix, nodes, subnet32=subnet32)
 
     app.initialize(topo)
     generate_docker_compose(app, topo)
@@ -144,7 +145,7 @@ def generate(prefix: str, filename: str, app: Application):
                 output("  ", end="")
                 run_in_ns(
                     n,
-                    f"ip route add {subnet}.0.0/16 via {topo.ports[n].ip[0]} dev eth0",
+                    f"ip route add {subnet}.0.0/16 via {topo.ports[n].ips[0]} dev eth0",
                 )
             output("}")
             output(f"setup_{n} &")

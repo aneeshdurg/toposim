@@ -51,6 +51,8 @@ class JanusGraphOnCassandra(Application):
         self.seeds = list([k for k in topo.nodes.keys() if "client" not in k])[0]
 
     def image(self, node: Node) -> str:
+        if node.is_dummy:
+            return "ubuntu:latest"
         if "client" in node.name:
             return "janusgraph/janusgraph:latest"
         return "cassandra:3.11.8"
@@ -80,6 +82,8 @@ class JanusGraphOnCassandra(Application):
         }
 
     def entrypoint(self, node: Node) -> Optional[str]:
+        if node.is_dummy:
+            return "true"
         if "client" not in node.name:
             return "bash ./wait.sh"
         return "sleep inf"
@@ -117,6 +121,8 @@ class TigerGraph(Application):
         pass
 
     def image(self, node: Node) -> str:
+        if node.is_dummy:
+            return "ubuntu:latest"
         return "tigergraph/tigergraph:latest"
 
     def volumes(self, node: Node) -> dict[str, str]:
@@ -126,6 +132,8 @@ class TigerGraph(Application):
         return None
 
     def entrypoint(self, node: Node) -> Optional[str]:
+        if node.is_dummy:
+            return "true"
         return None
 
     def mem_limit(self, node: Node) -> Optional[str]:

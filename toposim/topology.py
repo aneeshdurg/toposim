@@ -43,7 +43,7 @@ class Port:
     prefix: str
     id_: int
     networks: list[Network] = field(default_factory=lambda: [])
-    ip: list[str] = field(default_factory=lambda: [])
+    ips: list[str] = field(default_factory=lambda: [])
 
     @property
     def name(self) -> str:
@@ -54,6 +54,7 @@ class Port:
 class Node:
     name: str
     links: list[str]
+    is_dummy: bool
     # node to interface to communicate on (every node get it's own subnet)
     routes: dict[str, int] = field(default_factory=lambda: {})
     networks: list[Network] = field(default_factory=lambda: [])
@@ -69,8 +70,8 @@ class Topology:
     link_to_fwd_ip: dict[str, dict[str, str]]
     networks: list[Network]
 
+    _subnet32: str
     _subnet = 1
-    _subnet32 = "174"
 
     def create_network(self) -> Network:
         global _subnet
@@ -101,15 +102,16 @@ class Topology:
             messages = new_messages
         return route_table
 
-    def __init__(self, prefix: str, nodes: dict[str, Node]):
+    def __init__(self, prefix: str, nodes: dict[str, Node], subnet32: str="174"):
         self.networks = []
         self.nodes = nodes
+        self._subnet32 = subnet32
 
         routes = self.build_routing_table()
         for name, r in routes.items():
             log(name, r)
 
-        ports = {}
+        ports: dict[str, Port] = {}
         for i, n in enumerate(nodes):
             ports[n] = Port(prefix, i)
 
@@ -121,28 +123,28 @@ class Topology:
             nodes[n].networks.append(net)
             nodes[n].ip = net.vend_ip()
             ports[n].networks.append(net)
-            ports[n].ip.append(net.vend_ip())
+            ports[n].ips.append(net.vend_ip())
 
-        unique_links = set()
+        unique_links: set[tuple[str, str]] = set()
         for n in nodes.values():
             for l in n.links:
                 if (l, n.name) in unique_links:
                     continue
                 unique_links.add((n.name, l))
 
-        link_to_network = {n: {} for n in nodes}
-        link_to_fwd_ip = {n: {} for n in nodes}
+        link_to_network: dict[str, dict[str, Network]] = {n: {} for n in nodes}
+        link_to_fwd_ip: dict[str, dict[str, str]] = {n: {} for n in nodes}
         for node1, node2 in unique_links:
             net = self.create_network()
             ports[node1].networks.append(net)
-            ports[node1].ip.append(net.vend_ip())
+            ports[node1].ips.append(net.vend_ip())
             ports[node2].networks.append(net)
-            ports[node2].ip.append(net.vend_ip())
+            ports[node2].ips.append(net.vend_ip())
 
             link_to_network[node1][node2] = net
-            link_to_fwd_ip[node1][node2] = ports[node2].ip[-1]
+            link_to_fwd_ip[node1][node2] = ports[node2].ips[-1]
             link_to_network[node2][node1] = net
-            link_to_fwd_ip[node2][node1] = ports[node1].ip[-1]
+            link_to_fwd_ip[node2][node1] = ports[node1].ips[-1]
 
         for src in routes:
             for dst in routes[src]:

@@ -1,5 +1,6 @@
 import sys
 from dataclasses import dataclass, field
+from typing import Dict, List, Set, Tuple
 
 
 def log(*args, **kwargs):
@@ -42,8 +43,8 @@ class Network:
 class Port:
     prefix: str
     id_: int
-    networks: list[Network] = field(default_factory=lambda: [])
-    ips: list[str] = field(default_factory=lambda: [])
+    networks: List[Network] = field(default_factory=lambda: [])
+    ips: List[str] = field(default_factory=lambda: [])
 
     @property
     def name(self) -> str:
@@ -53,22 +54,22 @@ class Port:
 @dataclass
 class Node:
     name: str
-    links: list[str]
+    links: List[str]
     is_dummy: bool
     # node to interface to communicate on (every node get it's own subnet)
-    routes: dict[str, int] = field(default_factory=lambda: {})
-    networks: list[Network] = field(default_factory=lambda: [])
+    routes: Dict[str, int] = field(default_factory=lambda: {})
+    networks: List[Network] = field(default_factory=lambda: [])
     ip: str = ""
 
 
 class Topology:
-    nodes: dict[str, Node]
-    ports: dict[str, Port]
+    nodes: Dict[str, Node]
+    ports: Dict[str, Port]
     # [n1, n2] -> net
-    link_to_network: dict[str, dict[str, Network]]
+    link_to_network: Dict[str, Dict[str, Network]]
     # [n1, n2] -> ip n1 should forward traffic to to reach n2
-    link_to_fwd_ip: dict[str, dict[str, str]]
-    networks: list[Network]
+    link_to_fwd_ip: Dict[str, Dict[str, str]]
+    networks: List[Network]
 
     _subnet32: str
     _subnet = 1
@@ -80,7 +81,7 @@ class Topology:
         self._subnet += 1
         return res
 
-    def build_routing_table(self) -> dict[str, dict[str, str]]:
+    def build_routing_table(self) -> Dict[str, Dict[str, str]]:
         route_table = {n: {} for n in self.nodes}
         messages = {n: [[]] for n in self.nodes}
         while any(len(r) != (len(self.nodes) - 1) for r in route_table.values()):
@@ -102,7 +103,7 @@ class Topology:
             messages = new_messages
         return route_table
 
-    def __init__(self, prefix: str, nodes: dict[str, Node], subnet32: str="174"):
+    def __init__(self, prefix: str, nodes: Dict[str, Node], subnet32: str="174"):
         self.networks = []
         self.nodes = nodes
         self._subnet32 = subnet32
@@ -111,7 +112,7 @@ class Topology:
         for name, r in routes.items():
             log(name, r)
 
-        ports: dict[str, Port] = {}
+        ports: Dict[str, Port] = {}
         for i, n in enumerate(nodes):
             ports[n] = Port(prefix, i)
 
@@ -125,15 +126,15 @@ class Topology:
             ports[n].networks.append(net)
             ports[n].ips.append(net.vend_ip())
 
-        unique_links: set[tuple[str, str]] = set()
+        unique_links: Set[Tuple[str, str]] = set()
         for n in nodes.values():
             for l in n.links:
                 if (l, n.name) in unique_links:
                     continue
                 unique_links.add((n.name, l))
 
-        link_to_network: dict[str, dict[str, Network]] = {n: {} for n in nodes}
-        link_to_fwd_ip: dict[str, dict[str, str]] = {n: {} for n in nodes}
+        link_to_network: Dict[str, Dict[str, Network]] = {n: {} for n in nodes}
+        link_to_fwd_ip: Dict[str, Dict[str, str]] = {n: {} for n in nodes}
         for node1, node2 in unique_links:
             net = self.create_network()
             ports[node1].networks.append(net)

@@ -154,10 +154,10 @@ class TigerGraph(Application):
                     node_names.append(node_name)
             output(f"wait")
             # It needs to wait for the cluster to be ready
-            output("status=$(docker exec slimfly_3_h1 bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
+            output(f"status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
             output("while [ \"$status\" != \"Online\" ]; do")
             output("    sleep 60")
-            output("    status=$(docker exec slimfly_3_h1 bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
+            output(f"    status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
             output("done")
 
             new_config = []

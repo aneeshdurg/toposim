@@ -147,10 +147,19 @@ class TigerGraph(Application):
         shutil.copy("../tigergraph/setup-tg.sh", "data/setup-tg.sh")
         shutil.copy("../tigergraph/license", "data/license")
         with print_to_script("setup-cluster.sh") as output:
-            for node in topo.nodes:
-                output(f"docker exec -it {node} bash -i -c '/home/tigergraph/data/setup-tg.sh' &")
+            node_names = []
+            for node_name, node in topo.nodes.items():
+                if not node.is_dummy:
+                    output(f"docker exec {node_name} bash -i -c '/home/tigergraph/data/setup-tg.sh' &")
+                    node_names.append(node_name)
             output(f"wait")
-            node_names = list(topo.nodes.keys())
+            # It needs to wait for the cluster to be ready
+            output("status=$(docker exec slimfly_3_h1 bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
+            output("while [ \"$status\" != \"Online\" ]; do")
+            output("    sleep 60")
+            output("    status=$(docker exec slimfly_3_h1 bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{print $4}')")
+            output("done")
+
             new_config = []
             for i, node in enumerate(node_names):
                 if i == 0:
@@ -158,7 +167,9 @@ class TigerGraph(Application):
                 name = f"m{i + 1}"
                 new_config.append(f"{name}:{topo.nodes[node].ip}")
 
-            output(f'docker exec -it {node_names[0]} bash -i -c \'gadmin cluster expand {",".join(new_config)}\'')
+            num_replicas = 1
+
+            output(f'docker exec {node_names[0]} bash -i -c \'gadmin cluster expand -y {",".join(new_config)} --ha {num_replicas}\'')
 
     def post_network_setup(self, topo: Topology, output):
         pass

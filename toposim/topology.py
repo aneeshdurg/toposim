@@ -41,14 +41,9 @@ class Network:
 
 @dataclass
 class Port:
-    prefix: str
-    id_: int
+    name: str
     networks: List[Network] = field(default_factory=lambda: [])
     ips: List[str] = field(default_factory=lambda: [])
-
-    @property
-    def name(self) -> str:
-        return f"{self.prefix}_port{self.id_}"
 
 
 @dataclass
@@ -103,7 +98,7 @@ class Topology:
             messages = new_messages
         return route_table
 
-    def __init__(self, prefix: str, nodes: Dict[str, Node], subnet32: str="174"):
+    def __init__(self, prefix: str, nodes: Dict[str, Node], subnet32: str = "174"):
         self.networks = []
         self.nodes = nodes
         self._subnet32 = subnet32
@@ -114,7 +109,10 @@ class Topology:
 
         ports: Dict[str, Port] = {}
         for i, n in enumerate(nodes):
-            ports[n] = Port(prefix, i)
+            if nodes[n].is_dummy:
+                ports[n] = Port(n)
+            else:
+                ports[n] = Port(f"{prefix}_port{i}")
 
         num_networks = sum(len(n.links) for n in nodes.values()) // 2
         log(f"Requires {num_networks} networks between ports")
@@ -157,4 +155,7 @@ class Topology:
         self.ports = ports
         self.link_to_network = link_to_network
         self.link_to_fwd_ip = link_to_fwd_ip
-        print(link_to_network)
+
+        dummies = [n for n in self.nodes if self.nodes[n].is_dummy]
+        for d in dummies:
+            del self.nodes[d]

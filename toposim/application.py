@@ -51,8 +51,6 @@ class JanusGraphOnCassandra(Application):
         self.seeds = list([k for k in topo.nodes.keys() if "client" not in k])[0]
 
     def image(self, node: Node) -> str:
-        if node.is_dummy:
-            return "ubuntu:latest"
         if "client" in node.name:
             return "janusgraph/janusgraph:latest"
         return "cassandra:3.11.8"
@@ -121,8 +119,6 @@ class TigerGraph(Application):
         pass
 
     def image(self, node: Node) -> str:
-        if node.is_dummy:
-            return "ubuntu:latest"
         return "tigergraph/tigergraph:latest"
 
     def volumes(self, node: Node) -> dict[str, str]:
@@ -132,8 +128,6 @@ class TigerGraph(Application):
         return None
 
     def entrypoint(self, node: Node) -> Optional[str]:
-        if node.is_dummy:
-            return "bash -c true"
         return None
 
     def mem_limit(self, node: Node) -> Optional[str]:
@@ -147,17 +141,21 @@ class TigerGraph(Application):
         shutil.copy("../tigergraph/setup-tg.sh", "data/setup-tg.sh")
         shutil.copy("../tigergraph/license", "data/license")
         with print_to_script("setup-cluster.sh") as output:
-            node_names = []
-            for node_name, node in topo.nodes.items():
-                if not node.is_dummy:
-                    output(f"docker exec {node_name} bash -i -c '/home/tigergraph/data/setup-tg.sh' &")
-                    node_names.append(node_name)
+            node_names = list(topo.nodes.keys())
+            for name in node_names:
+                output(
+                    f"docker exec {name} bash -i -c '/home/tigergraph/data/setup-tg.sh' &"
+                )
             output(f"wait")
             # It needs to wait for the cluster to be ready
-            output(f"status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')")
-            output("while [ \"$status\" != \"Online\" ]; do")
+            output(
+                f"status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
+            )
+            output('while [ "$status" != "Online" ]; do')
             output("    sleep 60")
-            output(f"    status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')")
+            output(
+                f"    status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
+            )
             output("done")
 
             new_config = []
@@ -169,11 +167,12 @@ class TigerGraph(Application):
 
             num_replicas = 1
 
-            output(f'docker exec {node_names[0]} bash -i -c \'gadmin cluster expand -y {",".join(new_config)} --ha {num_replicas}\'')
+            output(
+                f'docker exec {node_names[0]} bash -i -c \'gadmin cluster expand -y {",".join(new_config)} --ha {num_replicas}\''
+            )
 
     def post_network_setup(self, topo: Topology, output):
         pass
 
     def post_pause(self, output):
         pass
-

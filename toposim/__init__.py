@@ -9,6 +9,7 @@ from .application import Application
 from .topology import Node, Topology
 from .utils import print_to_file, print_to_script
 
+
 def generate_docker_compose(app: Application, topo: Topology):
     # Set up docker-compose.yml
     with print_to_file("docker-compose.yml") as output:
@@ -74,6 +75,7 @@ def define_run_in_ns(output):
 
     def run_in_ns(name, cmd):
         output("run_in_ns", name, cmd)
+
     return run_in_ns
 
 
@@ -93,7 +95,9 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
             assert k in data["links"][l], f"malformed link {k} -> {l}"
         name = f"{prefix}_{k}"
         print(name, name in data["dummyNodes"])
-        nodes[name] = Node(name, [f"{prefix}_{l}" for l in links], k in data["dummyNodes"])
+        nodes[name] = Node(
+            name, [f"{prefix}_{l}" for l in links], k in data["dummyNodes"]
+        )
         i += 1
 
     topo = Topology(prefix, nodes, subnet32=subnet32)
@@ -157,7 +161,7 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
             output(f"setup_{p.name}() {{")
             for dst in topo.link_to_network[n]:
                 target_net = topo.link_to_network[n][dst]
-                forward_net = f"{topo.nodes[dst].networks[0].subnet16}.0.0/16"
+                forward_net = f"{topo.ports[dst].networks[0].subnet16}.0.0/16"
                 # need to resolve ??? by getting the ip of the other port on the
                 # network...
                 forward_ip = topo.link_to_fwd_ip[n][dst]

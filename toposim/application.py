@@ -33,7 +33,7 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def cpus(self, node: Node) -> Optional[int]:
+    def cpus(self, node: Node) -> Optional[float]:
         pass
 
     @abstractmethod
@@ -93,7 +93,7 @@ class JanusGraphOnCassandra(Application):
     def mem_limit(self, node: Node) -> Optional[str]:
         return "4g"
 
-    def cpus(self, node: Node) -> Optional[int]:
+    def cpus(self, node: Node) -> Optional[float]:
         return None
 
     def extra(self, topo: Topology):
@@ -140,7 +140,7 @@ class TigerGraph(Application):
     def mem_limit(self, node: Node) -> Optional[str]:
         return "8g"
 
-    def cpus(self, node: Node) -> Optional[int]:
+    def cpus(self, node: Node) -> Optional[float]:
         return 2
 
     def extra(self, topo: Topology):

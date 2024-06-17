@@ -33,6 +33,10 @@ class Application(ABC):
         pass
 
     @abstractmethod
+    def cpus(self, node: Node) -> Optional[int]:
+        pass
+
+    @abstractmethod
     def extra(self, topo: Topology):
         pass
 
@@ -89,6 +93,9 @@ class JanusGraphOnCassandra(Application):
     def mem_limit(self, node: Node) -> Optional[str]:
         return "4g"
 
+    def cpus(self, node: Node) -> Optional[int]:
+        return None
+
     def extra(self, topo: Topology):
         shutil.copy("../janusgraph/wait.sh", "wait.sh")
 
@@ -132,6 +139,9 @@ class TigerGraph(Application):
 
     def mem_limit(self, node: Node) -> Optional[str]:
         return "8g"
+
+    def cpus(self, node: Node) -> Optional[int]:
+        return 2
 
     def extra(self, topo: Topology):
         try:

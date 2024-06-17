@@ -43,6 +43,8 @@ def generate_docker_compose(app: Application, topo: Topology):
             output(f"    hostname: {node.name}")
             if mem_limit := app.mem_limit(node):
                 output(f"    mem_limit: {mem_limit}")
+            if cpus := app.cpus(node):
+                output(f"    cpus: {cpus}")
             if entrypt := app.entrypoint(node):
                 output(f"    entrypoint: {entrypt}")
             output(f"    networks:")

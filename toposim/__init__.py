@@ -158,6 +158,7 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         output("wait")
         output()
 
+
         # for every port setup routes according to the routing table
         for n, p in topo.ports.items():
             output(f"setup_{p.name}() {{")
@@ -177,6 +178,29 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
             output(f"setup_{p.name} &")
         output("wait")
         output()
+
+        # Output a mapping from each link to the interface it's assigned to
+        output("echo > links.yml")
+        for n in topo.nodes:
+            output(f"echo {n}: >> links.yml")
+            port = topo.ports[n]
+            network = topo.nodes[n].networks[0]
+            output(f"echo ' ' {port.name}: $(get_iface_for_subnet {n} {network.subnet16}) >> links.yml")
+
+        for n, p in topo.ports.items():
+            output(f"echo {p.name}: >> links.yml")
+            node_net = p.networks[0]
+            output(f"echo ' ' {n}: $(get_iface_for_subnet {p.name} {node_net.subnet16}) >> links.yml")
+            for net in p.networks[1:]:
+                found = False
+                for q in topo.ports.values():
+                    if p == q:
+                        continue
+                    if net in q.networks:
+                        found = True
+                        get_net = f"$(get_iface_for_subnet {p.name} {net.subnet16})"
+                        output(f"echo ' ' {q.name}: {get_net} >> links.yml")
+                assert found, "need to search nodes also?"
 
         app.post_network_setup(topo, output)
         output("wait")

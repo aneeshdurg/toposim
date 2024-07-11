@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+import textwrap
 
 from .application import Application
 from .topology import Node, Topology
@@ -158,7 +159,6 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         output("wait")
         output()
 
-
         # for every port setup routes according to the routing table
         for n, p in topo.ports.items():
             output(f"setup_{p.name}() {{")
@@ -185,12 +185,16 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
             output(f"echo {n}: >> links.yml")
             port = topo.ports[n]
             network = topo.nodes[n].networks[0]
-            output(f"echo ' ' {port.name}: $(get_iface_for_subnet {n} {network.subnet16}) >> links.yml")
+            output(
+                f"echo ' ' {port.name}: $(get_iface_for_subnet {n} {network.subnet16}) >> links.yml"
+            )
 
         for n, p in topo.ports.items():
             output(f"echo {p.name}: >> links.yml")
             node_net = p.networks[0]
-            output(f"echo ' ' {n}: $(get_iface_for_subnet {p.name} {node_net.subnet16}) >> links.yml")
+            output(
+                f"echo ' ' {n}: $(get_iface_for_subnet {p.name} {node_net.subnet16}) >> links.yml"
+            )
             for net in p.networks[1:]:
                 found = False
                 for q in topo.ports.values():
@@ -242,7 +246,8 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         output()
 
         for net in topo.networks:
-            output(f"docker network rm {prefix}_{net.name}")
+            network_name = (f"{prefix}_{net.name}").lower()
+            output(f"docker network rm {network_name}")
 
     with print_to_script("pause.sh") as output:
         for node in topo.nodes:
@@ -261,3 +266,75 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         output("wait")
         output(f"sleep 5")
         output(f"./setup-networking.sh")
+
+    os.makedirs("tools", exist_ok=True)
+
+    with print_to_script("tools/run_in_ns") as output:
+        run_in_ns = define_run_in_ns(output)
+        output('run_in_ns "$@"')
+
+    with print_to_script("tools/get_mac") as output:
+        run_in_ns = define_run_in_ns(output)
+        output("get_mac() {")
+        output("  ", end="")
+        run_in_ns("$1", "ip link show eth0 | grep link/ether | awk '{print $2}'")
+        output("}")
+        for n in topo.nodes:
+            output(f"echo {n} $(get_mac {n})")
+
+    with print_to_script("tools/tcpdump") as output:
+        run_in_ns = define_run_in_ns(output)
+
+        output("start_tcpdump() {")
+        output(f'  local output_dir="$1"')
+        output("")
+        output("")
+        # TODO running tcpdump on ports might also be useful instead of only on
+        # nodes
+        for n in topo.nodes:
+            output(f"  output_file=$output_dir/{n}_eth0")
+            output("  ", end="")
+            run_in_ns(n, "tcpdump -e -i eth0 -w $output_file &")
+            output("")
+
+        output("")
+        for p in topo.ports.values():
+            for i in range(len(p.networks)):
+                output(f"  output_file=$output_dir/{p.name}_eth{i}")
+                output("  ", end="")
+                run_in_ns(p.name, f"tcpdump -e -i eth{i} -w $output_file &")
+                output("")
+        output("}")
+
+        output("stop_tcpdump() {")
+        # This will kill ALL tcpdump processes - so make sure you're not running
+        # any tcpdump instances that weren't started by this script.
+        # TODO - only kill process started by this script
+        output("  sudo pkill tcpdump")
+        output("}")
+
+        output(
+            textwrap.dedent(
+                """\
+            usage() {
+                echo "Usage: $0 {start|stop} [output directory]"
+                exit 1
+            }
+            sudo true
+
+            # Main script logic
+            case "$1" in
+              start)
+                [ $# -eq 2 ] || usage
+                start_tcpdump
+                ;;
+              stop)
+                stop_tcpdump
+                ;;
+              *)
+                usage
+                ;;
+            esac
+            """
+            )
+        )

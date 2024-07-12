@@ -21,7 +21,9 @@ def template(fname: str, topo: Topology) -> str:
 
 
 def generate_docker_compose(app: Application, topo: Topology):
-    # Set up docker-compose.yml
+    # Set up docker-compose.yml. This could be a template as well, but getting
+    # the whitespace to render correctly in templates is a bit painful, so it's
+    # easier to leave this in python so that we can easily modify it.
     with print_to_file("docker-compose.yml") as output:
         output('version: "2.4"')
         output("networks:")
@@ -71,26 +73,6 @@ def generate_docker_compose(app: Application, topo: Topology):
                     output(f'      {key}: "{val}"')
 
 
-def define_run_in_ns(output):
-    output("run_in_ns() {")
-    output("  pid=$(docker inspect $1 | jq \\.[0].State.Pid)")
-    output("  shift")
-    output('  flag="-n"')
-    output("  # if $1 starts with a -, then replace $flag with $1")
-    output("  if [[ $1 == -* ]]; then")
-    output("      flag=$1")
-    output("      shift")
-    output("  fi")
-    output('  sudo nsenter -t $pid $flag "$@"')
-    output("}")
-    output()
-
-    def run_in_ns(name, cmd):
-        output("run_in_ns", name, cmd)
-
-    return run_in_ns
-
-
 def generate(prefix: str, filename: str, app: Application, subnet32: str):
     with open(filename) as f:
         data = json.load(f)
@@ -118,106 +100,6 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
     generate_docker_compose(app, topo)
     app.extra(topo)
 
-    # setup networking
-    with print_to_script("setup-networking.sh") as output:
-        output("set -x")
-        run_in_ns = define_run_in_ns(output)
-
-        output("forward() {")
-        output("  ", end="")
-        run_in_ns(
-            "$1", "iptables -t nat -A POSTROUTING --out-interface $2 -j MASQUERADE"
-        )
-        output("  ", end="")
-        run_in_ns("$1", f"iptables -A FORWARD -o $2 -j ACCEPT")
-        output("}")
-        output()
-
-        output("get_iface_for_subnet() {")
-        output("  ", end="")
-        run_in_ns(
-            "$1",
-            'ip addr | grep "inet $2" -B2 | head -n1 | cut -d\\  -f2 | cut -d@ -f1',
-        )
-        output()
-        output("}")
-        output()
-
-        def forward(name, iface):
-            output(f"forward {name} {iface}")
-
-        # for every port, set up packet forwarding
-        for p in topo.ports.values():
-            for i in range(len(p.networks)):
-                forward(p.name, f"eth{i}")
-        output()
-        # for every node forward 172.0.0.0/32 to the port
-        for n in topo.nodes:
-            output(f"setup_{n}() {{")
-            for m in topo.nodes:
-                if n == m:
-                    continue
-                subnet = topo.nodes[m].networks[0].subnet16
-                output("  ", end="")
-                run_in_ns(
-                    n,
-                    f"ip route add {subnet}.0.0/16 via {topo.ports[n].ips[0]} dev eth0",
-                )
-            output("}")
-            output(f"setup_{n} &")
-        output("wait")
-        output()
-
-        # for every port setup routes according to the routing table
-        for n, p in topo.ports.items():
-            output(f"setup_{p.name}() {{")
-            for dst in topo.link_to_network[n]:
-                target_net = topo.link_to_network[n][dst]
-                forward_net = f"{topo.ports[dst].networks[0].subnet16}.0.0/16"
-                # need to resolve ??? by getting the ip of the other port on the
-                # network...
-                forward_ip = topo.link_to_fwd_ip[n][dst]
-                link_subnet = forward_ip.rsplit(".", 2)[0]
-                output(f"  iface=$(get_iface_for_subnet {p.name} {link_subnet})")
-                output("  ", end="")
-                run_in_ns(
-                    p.name, f"ip route add {forward_net} via {forward_ip} dev $iface"
-                )
-            output("}")
-            output(f"setup_{p.name} &")
-        output("wait")
-        output()
-
-        # Output a mapping from each link to the interface it's assigned to
-        output("echo > links.yml")
-        for n in topo.nodes:
-            output(f"echo {n}: >> links.yml")
-            port = topo.ports[n]
-            network = topo.nodes[n].networks[0]
-            output(
-                f"echo ' ' {port.name}: $(get_iface_for_subnet {n} {network.subnet16}) >> links.yml"
-            )
-
-        for n, p in topo.ports.items():
-            output(f"echo {p.name}: >> links.yml")
-            node_net = p.networks[0]
-            output(
-                f"echo ' ' {n}: $(get_iface_for_subnet {p.name} {node_net.subnet16}) >> links.yml"
-            )
-            for net in p.networks[1:]:
-                found = False
-                for q in topo.ports.values():
-                    if p == q:
-                        continue
-                    if net in q.networks:
-                        found = True
-                        get_net = f"$(get_iface_for_subnet {p.name} {net.subnet16})"
-                        output(f"echo ' ' {q.name}: {get_net} >> links.yml")
-                assert found, "need to search nodes also?"
-
-        app.post_network_setup(topo, output)
-        output("wait")
-
     os.makedirs("tools", exist_ok=True)
     templates = [
         "add_delay",
@@ -226,14 +108,19 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         "resume",
         "tools/get_mac",
         "tools/run_in_ns",
-        "tools/tcp_dump",
+        "tools/tcpdump",
     ]
     for t in templates:
         with print_to_script(f"{t}") as output:
             output(template(f"{t}.sh", topo))
 
-    # pause is a special case, since there might be application specific
-    # behavior we need to inject
+    # pause and setup_networking are special cases, since there might be
+    # application specific behavior we need to inject
+    with print_to_script("setup_networking") as output:
+        output(template("setup_networking.sh", topo))
+        app.post_network_setup(topo, output)
+        output("wait")
+
     with print_to_script("pause") as output:
         output(template("pause.sh", topo))
         app.post_pause(output)

@@ -58,6 +58,7 @@ class Node:
 
 
 class Topology:
+    prefix: str
     nodes: Dict[str, Node]
     ports: Dict[str, Port]
     # [n1, n2] -> net
@@ -99,6 +100,7 @@ class Topology:
         return route_table
 
     def __init__(self, prefix: str, nodes: Dict[str, Node], subnet32: str = "174"):
+        self.prefix = prefix
         self.networks = []
         self.nodes = nodes
         self._subnet32 = subnet32

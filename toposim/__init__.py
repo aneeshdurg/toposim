@@ -2,10 +2,22 @@
 import json
 import os
 import textwrap
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
 
 from .application import Application
 from .topology import Node, Topology
 from .utils import print_to_file, print_to_script
+
+
+template_dir = Path(__file__).parent / "templates"
+env = Environment(loader=FileSystemLoader(template_dir))
+
+
+def template(fname: str, topo: Topology) -> str:
+    template_obj = env.get_template(fname)
+    return template_obj.render(topo=topo)
 
 
 def generate_docker_compose(app: Application, topo: Topology):
@@ -206,132 +218,22 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         app.post_network_setup(topo, output)
         output("wait")
 
-    with print_to_script("add_delay.sh") as output:
-        output("set -x")
-        run_in_ns = define_run_in_ns(output)
-
-        for p in topo.ports.values():
-            for i in range(len(p.networks)):
-                run_in_ns(p.name, f"tc qdisc add dev eth{i} root netem delay 25ms &")
-        output("wait")
-        output()
-
-    with print_to_script("mod_delay.sh") as output:
-        # Usage ./mod_delay.sh <delay in ms>
-        # note that add_delay must be run at least once
-        output("set -x")
-        run_in_ns = define_run_in_ns(output)
-
-        for p in topo.ports.values():
-            for i in range(len(p.networks)):
-                run_in_ns(p.name, f"tc qdisc change dev eth{i} root netem delay $1ms &")
-        output("wait")
-        output()
-
-    with print_to_script("cleanup.sh") as output:
-        output("cleanup() {")
-        output(f"  docker stop $1")
-        output(f"  docker rm $1")
-        output("}")
-        output()
-
-        for p in topo.ports.values():
-            output(f"cleanup {p.name} &")
-        for n in topo.nodes:
-            output(f"cleanup {n} &")
-        output("wait")
-        output()
-
-        for net in topo.networks:
-            network_name = (f"{prefix}_{net.name}").lower()
-            output(f"docker network rm {network_name}")
-
-    with print_to_script("pause.sh") as output:
-        for node in topo.nodes:
-            output(f"docker stop {node} & ")
-        for p in topo.ports.values():
-            output(f"docker stop {p.name} &")
-        output("wait")
-        output()
-        app.post_pause(output)
-
-    with print_to_script("resume.sh") as output:
-        for node in topo.nodes:
-            output(f"docker start {node} &")
-        for p in topo.ports.values():
-            output(f"docker start {p.name} &")
-        output("wait")
-        output(f"sleep 5")
-        output(f"./setup-networking.sh")
-
     os.makedirs("tools", exist_ok=True)
+    templates = [
+        "add_delay",
+        "cleanup",
+        "mod_delay",
+        "resume",
+        "tools/get_mac",
+        "tools/run_in_ns",
+        "tools/tcp_dump",
+    ]
+    for t in templates:
+        with print_to_script(f"{t}") as output:
+            output(template(f"{t}.sh", topo))
 
-    with print_to_script("tools/run_in_ns") as output:
-        run_in_ns = define_run_in_ns(output)
-        output('run_in_ns "$@"')
-
-    with print_to_script("tools/get_mac") as output:
-        run_in_ns = define_run_in_ns(output)
-        output("get_mac() {")
-        output("  ", end="")
-        run_in_ns("$1", "ip link show eth0 | grep link/ether | awk '{print $2}'")
-        output("}")
-        for n in topo.nodes:
-            output(f"echo {n} $(get_mac {n})")
-
-    with print_to_script("tools/tcpdump") as output:
-        run_in_ns = define_run_in_ns(output)
-
-        output("start_tcpdump() {")
-        output(f'  local output_dir="$1"')
-        output("")
-        output("")
-        # TODO running tcpdump on ports might also be useful instead of only on
-        # nodes
-        for n in topo.nodes:
-            output(f"  output_file=$output_dir/{n}_eth0")
-            output("  ", end="")
-            run_in_ns(n, "tcpdump -e -i eth0 -w $output_file &")
-            output("")
-
-        output("")
-        for p in topo.ports.values():
-            for i in range(len(p.networks)):
-                output(f"  output_file=$output_dir/{p.name}_eth{i}")
-                output("  ", end="")
-                run_in_ns(p.name, f"tcpdump -e -i eth{i} -w $output_file &")
-                output("")
-        output("}")
-
-        output("stop_tcpdump() {")
-        # This will kill ALL tcpdump processes - so make sure you're not running
-        # any tcpdump instances that weren't started by this script.
-        # TODO - only kill process started by this script
-        output("  sudo pkill tcpdump")
-        output("}")
-
-        output(
-            textwrap.dedent(
-                """\
-            usage() {
-                echo "Usage: $0 {start|stop} [output directory]"
-                exit 1
-            }
-            sudo true
-
-            # Main script logic
-            case "$1" in
-              start)
-                [ $# -eq 2 ] || usage
-                start_tcpdump
-                ;;
-              stop)
-                stop_tcpdump
-                ;;
-              *)
-                usage
-                ;;
-            esac
-            """
-            )
-        )
+    # pause is a special case, since there might be application specific
+    # behavior we need to inject
+    with print_to_script("pause") as output:
+        output(template("pause.sh", topo))
+        app.post_pause(output)

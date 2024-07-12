@@ -1,10 +1,14 @@
 import os
 import shutil
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Optional
 
 from .topology import Node, Topology
 from .utils import print_to_file, print_to_script
+
+
+appdata_dir = Path(__file__).parent / "appdata"
 
 
 class Application(ABC):
@@ -97,12 +101,14 @@ class JanusGraphOnCassandra(Application):
         return None
 
     def extra(self, topo: Topology):
-        shutil.copy("../janusgraph/wait.sh", "wait.sh")
+        shutil.copy(appdata_dir / "janusgraph/wait.sh", "wait.sh")
 
         os.makedirs("etc", exist_ok=True)
         try:
             for node in topo.nodes:
-                shutil.copytree("../janusgraph/etc_template", f"./etc/{node}")
+                shutil.copytree(
+                    appdata_dir / "janusgraph/etc_template", f"./etc/{node}"
+                )
         except Exception:
             pass
 
@@ -148,8 +154,9 @@ class TigerGraph(Application):
             os.mkdir("data")
         except FileExistsError:
             pass
-        shutil.copy("../tigergraph/setup-tg.sh", "data/setup-tg.sh")
-        shutil.copy("../tigergraph/license", "data/license")
+
+        shutil.copy(appdata_dir / "tigergraph/setup-tg.sh", "data/setup-tg.sh")
+        shutil.copy(appdata_dir / "tigergraph/license", "data/license")
         with print_to_script("setup-cluster.sh") as output:
             node_names = list(topo.nodes.keys())
             for name in node_names:

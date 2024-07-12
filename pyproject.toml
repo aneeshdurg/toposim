@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "toposim"
+version = "0.0.1"
+authors = [
+  { name="Aneesh Durg", email="aneeshdurg17@gmail.com" },
+  { name="deukyeon", email="deukyeon.hwang@gmail.com" },
+]
+description = "Simulate network topologies for distributed apps in Docker"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Database :: Database Engines/Servers",
+]
+dependencies = [ ]
+
+[project.urls]
+"Homepage" = "https://github.com/aneeshdurg/toposim"
+"Bug Tracker" = "https://github.com/aneeshdurg/toposim/issues"
+
+
+[tool.pyright]
+exclude = ["**/__pycache__"]
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+
+[tool.isort]
+profile = "black"
+
+[tool.hatch.build.targets.wheel]
+packages = ["toposim/"]

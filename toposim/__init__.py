@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import json
 import os
-import shutil
-import sys
-from pathlib import Path
 import textwrap
 
 from .application import Application

@@ -1,3 +1,5 @@
+# Resume the cluster if paused
+
 {% for n in topo.nodes +%}
 docker start {{n}} &
 {%- endfor %}

@@ -1,3 +1,4 @@
+# Get the MAC address of every node
 
 {% include 'run_in_ns_fn.sh' %}
 

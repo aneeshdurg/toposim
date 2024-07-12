@@ -1,3 +1,5 @@
+# Delete all docker state for this cluster
+
 cleanup() {
     docker stop $1
     docker rm $1

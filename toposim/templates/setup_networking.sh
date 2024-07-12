@@ -1,5 +1,8 @@
 set -x
 
+# Setup networking using the topology specified to construct a static routing
+# table.
+
 {% include 'run_in_ns_fn.sh' %}
 
 forward() {

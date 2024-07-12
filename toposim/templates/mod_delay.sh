@@ -1,5 +1,5 @@
 set -x
-# Usage ./mod_delay.sh <delay in ms>
+# Usage ./mod_delay <delay in ms>
 # note that add_delay must be run at least once
 
 {% include 'run_in_ns_fn.sh' %}

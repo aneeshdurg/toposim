@@ -1,3 +1,5 @@
+# Add a constant delay to every packet sent over the network. See mod_delay for
+# a customizable delay
 set -x
 
 {% include 'run_in_ns_fn.sh' %}

@@ -66,7 +66,7 @@ echo '    - '$(get_iface_for_subnet {{n}} {{network.subnet16}}) >> links.yml
 echo {{p.name}}: >> links.yml
     {%- set node_net = p.networks[0] %}
 echo '  '{{n}}: >> links.yml
-echo '    '$(get_iface_for_subnet {{p.name}} {{node_net.subnet16}}) >> links.yml
+echo '    - '$(get_iface_for_subnet {{p.name}} {{node_net.subnet16}}) >> links.yml
   {%- for net in p.networks[1:] +%}
     {#- {% set found = False %} -#}
     {%- for q in topo.ports.values() if p != q +%}

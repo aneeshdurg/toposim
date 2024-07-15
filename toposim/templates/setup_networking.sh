@@ -12,7 +12,7 @@ forward() {
 
 get_iface_for_subnet() {
   run_in_ns $1 ip addr \
-    | grep "inet $2" -B2 | head -n1 | cut -d\\  -f2 | cut -d@ -f1
+    | grep "inet $2" -B2 | head -n1 | cut -d\  -f2 | cut -d@ -f1
 }
 
 # for every port, set up packet forwarding
@@ -58,19 +58,22 @@ echo > links.yml
 echo {{n}}: >> links.yml
 {%- set port = topo.ports[n] -%}
 {%- set network = topo.nodes[n].networks[0] %}
-echo ' ' {{port.name}}: $(get_iface_for_subnet {{n}} {{network.subnet16}}) >> links.yml
+echo '  '{{port.name}}: >> links.yml
+echo '    - '$(get_iface_for_subnet {{n}} {{network.subnet16}}) >> links.yml
 {%- endfor %}
 
 {%- for (n, p) in topo.ports.items() +%}
 echo {{p.name}}: >> links.yml
     {%- set node_net = p.networks[0] %}
-echo ' ' {{n}}: $(get_iface_for_subnet {{p.name}} {{node_net.subnet16}}) >> links.yml
+echo '  '{{n}}: >> links.yml
+echo '    '$(get_iface_for_subnet {{p.name}} {{node_net.subnet16}}) >> links.yml
   {%- for net in p.networks[1:] +%}
     {#- {% set found = False %} -#}
     {%- for q in topo.ports.values() if p != q +%}
       {%- if net in q.networks +%}
         {#- {% set found = True %} #}
-echo ' ' {{q.name}}: $(get_iface_for_subnet {{p.name}} {{net.subnet16}}) >> links.yml
+echo '  '{{q.name}}: >> links.yml
+echo '    - '$(get_iface_for_subnet {{p.name}} {{net.subnet16}}) >> links.yml
       {%- endif %}
       {#- assert found, "need to search nodes also?" -#}
     {%- endfor %}

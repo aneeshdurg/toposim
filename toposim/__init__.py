@@ -106,6 +106,7 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         "cleanup",
         "mod_delay",
         "resume",
+        "tools/egress",
         "tools/get_mac",
         "tools/run_in_ns",
         "tools/tcpdump",

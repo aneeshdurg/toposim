@@ -165,15 +165,16 @@ class TigerGraph(Application):
                 )
             output(f"wait")
             # It needs to wait for the cluster to be ready
-            output(
-                f"status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
-            )
-            output('while [ "$status" != "Online" ]; do')
-            output("    sleep 60")
-            output(
-                f"    status=$(docker exec {node_names[0]} bash -c '/home/tigergraph/tigergraph/app/cmd/gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
-            )
-            output("done")
+            for name in node_names:
+                output(
+                    f"status=$(docker exec {name} bash -i -c 'gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
+                )
+                output('while [ "$status" != "Online" ]; do')
+                output("    sleep 60")
+                output(
+                    f"    status=$(docker exec {name} bash -i -c 'gadmin status gsql' | grep GSQL | awk '{{print $4}}')"
+                )
+                output("done")
 
             new_config = []
             for i, node in enumerate(node_names):

@@ -128,6 +128,12 @@ class JanusGraphOnCassandra(Application):
 
 
 class TigerGraph(Application):
+    def __init__(self, license=None):
+        if license is None:
+            self.license = appdata_dir / "tigergraph/license"
+        else:
+            self.license = license
+
     def initialize(self, topo: Topology):
         pass
 
@@ -156,7 +162,7 @@ class TigerGraph(Application):
             pass
 
         shutil.copy(appdata_dir / "tigergraph/setup-tg.sh", "data/setup-tg.sh")
-        shutil.copy(appdata_dir / "tigergraph/license", "data/license")
+        shutil.copy(self.license, "data/license")
         with print_to_script("setup-cluster.sh") as output:
             node_names = list(topo.nodes.keys())
             for name in node_names:

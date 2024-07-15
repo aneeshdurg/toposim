@@ -9,7 +9,13 @@ parser.add_argument("prefix")
 parser.add_argument("filename")
 parser.add_argument("--app", action="store", default="janusgraph")
 parser.add_argument("--subnet32", action="store", default="174")
-parser.add_argument("-l", "--license", action="store", default=None, help="License file to use for tigergraph")
+parser.add_argument(
+    "-l",
+    "--license",
+    action="store",
+    default=None,
+    help="License file to use for tigergraph",
+)
 
 args = parser.parse_args()
 

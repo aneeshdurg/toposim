@@ -174,7 +174,9 @@ class TigerGraph(Application):
             # It needs to wait for the GSQL service to be ready before
             # clustering
             output("get_gsql_status() {")
-            output("  docker exec $1 bash -i -c 'gadmin status gsql' | grep GSQL | awk '{print $4}'")
+            output(
+                "  docker exec $1 bash -i -c 'gadmin status gsql' | grep GSQL | awk '{print $4}'"
+            )
             output("}")
             output("sleep_till_online() {")
             output("  local status=$(get_gsql_status $1)")

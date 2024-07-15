@@ -4,6 +4,7 @@
 
 start_tcpdump() {
   local output_dir="$1"
+  mkdir -p $output_dir
 
 {%- for n in topo.nodes +%}
   output_file=$output_dir/{{n}}_eth0
@@ -37,7 +38,7 @@ sudo true
 case "$1" in
   start)
     [ $# -eq 2 ] || usage
-    start_tcpdump
+    start_tcpdump $2
     ;;
   stop)
     stop_tcpdump

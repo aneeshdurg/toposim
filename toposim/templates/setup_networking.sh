@@ -11,7 +11,7 @@ forward() {
 }
 
 get_iface_for_subnet() {
-  run_in_ns $1 ip addr | grep "inet $2" | awk '{ print $NF }'
+  run_in_ns $1 ip addr | grep "inet $2\." | awk '{ print $NF }'
 }
 
 # for every port, set up packet forwarding

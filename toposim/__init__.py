@@ -110,6 +110,7 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         "tools/get_mac",
         "tools/run_in_ns",
         "tools/tcpdump",
+        "tools/limit_bandwidth",
     ]
     for t in templates:
         with print_to_script(f"{t}") as output:

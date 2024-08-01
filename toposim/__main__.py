@@ -25,6 +25,8 @@ elif args.app == "tigergraph":
     app = TigerGraph(license=Path(args.license).resolve())
 elif args.app == "galois":
     app = Galois()
+elif args.app == "cockroach":
+    app = Cockroach()
 else:
     raise Exception("unknown app type")
 generate(args.prefix, args.filename, app, args.subnet32)

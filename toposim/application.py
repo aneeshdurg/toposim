@@ -39,6 +39,10 @@ class Application(ABC):
     @abstractmethod
     def cpus(self, node: Node) -> Optional[float]:
         pass
+    
+    @abstractmethod
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        pass
 
     @abstractmethod
     def extra(self, topo: Topology):
@@ -99,6 +103,9 @@ class JanusGraphOnCassandra(Application):
 
     def cpus(self, node: Node) -> Optional[float]:
         return None
+    
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        return None
 
     def extra(self, topo: Topology):
         shutil.copy(appdata_dir / "janusgraph/wait.sh", "wait.sh")
@@ -154,6 +161,9 @@ class TigerGraph(Application):
 
     def cpus(self, node: Node) -> Optional[float]:
         return 2
+    
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        return None
 
     def extra(self, topo: Topology):
         try:
@@ -232,11 +242,63 @@ class Galois(Application):
 
     def cpus(self, node: Node) -> Optional[float]:
         return None
+    
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        return None
 
     def extra(self, topo: Topology):
         with open("data/hostfile", "w") as f:
             for node in topo.nodes.values():
                 f.write(node.ip + "\n")
+
+    def post_network_setup(self, topo: Topology, output):
+        pass
+
+    def post_pause(self, output):
+        pass
+
+
+class Cockroach(Application):
+    def initialize(self, topo: Topology):
+        self.node_names = []
+        self.node_ips = []
+        for node in topo.nodes.values():
+            self.node_names.append(node.name)
+            self.node_ips.append(node.ip)
+
+    def image(self, node: Node) -> str:
+        return 'cockroachdb/cockroach:v24.1.2'
+
+    def volumes(self, node: Node) -> dict[str, str]:
+        return {f'{node.name}': '/cockroach/cockroach-data'}
+
+    def environment(self) -> Optional[dict[str, str]]:
+        return None
+
+    def entrypoint(self, node: Node) -> Optional[str]:
+        node_list = ','.join([ip + ":26357" for ip in self.node_ips])
+        idx = self.node_ips.index(node.ip)
+        return f'./cockroach start --advertise-addr={node.ip}:26357 \
+                                 --http-addr={node.ip}:{8080 + idx} \
+                                 --listen-addr={node.ip}:26357 \
+                                 --sql-addr={node.ip}:{26257 + idx} \
+                                 --insecure \
+                                 --join={node_list}'
+
+    def mem_limit(self, node: Node) -> Optional[str]:
+        return "4g"
+
+    def cpus(self, node: Node) -> Optional[float]:
+        return 2
+    
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        idx = self.node_ips.index(node.ip)
+        return {f"{26257 + idx}": f"{26257 + idx}", f"{8080 + idx}": f"{8080 + idx}"}
+
+    def extra(self, topo: Topology):
+        with print_to_script("setup-cluster.sh") as output:
+            output(f'docker exec -it {self.node_names[0]} ./cockroach --host={self.node_ips[0]}:26357 init --insecure')
+            output(f'docker exec -it {self.node_names[0]} grep \'node starting\' /cockroach/cockroach-data/logs/cockroach.log -A 11')
 
     def post_network_setup(self, topo: Topology, output):
         pass

@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from . import generate
-from .application import JanusGraphOnCassandra, TigerGraph
+from .application import JanusGraphOnCassandra, TigerGraph, Cockroach
 
 parser = argparse.ArgumentParser()
 parser.add_argument("prefix")
@@ -23,6 +23,8 @@ if args.app == "janusgraph":
     app = JanusGraphOnCassandra()
 elif args.app == "tigergraph":
     app = TigerGraph(license=Path(args.license).resolve())
+elif args.app == "cockroach":
+    app = Cockroach()
 else:
     raise Exception("unknown app type")
 generate(args.prefix, args.filename, app, args.subnet32)

@@ -28,3 +28,12 @@ git clone https://github.com/aneeshdurg/toposim
 cd toposim
 pip install .
 ```
+
+## Supported Applications
+
++ [JanusGraph](https://janusgraph.org)
++ [TigerGraph](https://www.tigergraph.com/)
+    - Note that TigerGraph requires a license.
++ [Galois](https://github.com/IntelligentSoftwareSystems/Galois)
+    - Note that running Galois requires building the docker image first. See
+      [here](./toposim/appdata/galois/README.md)

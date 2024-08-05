@@ -209,3 +209,38 @@ class TigerGraph(Application):
 
     def post_pause(self, output):
         pass
+
+
+class Galois(Application):
+    def initialize(self, topo: Topology):
+        pass
+
+    def image(self, node: Node) -> str:
+        return "galois"
+
+    def volumes(self, node: Node) -> dict[str, str]:
+        return {"./data": "/data"}
+
+    def environment(self) -> Optional[dict[str, str]]:
+        return None
+
+    def entrypoint(self, node: Node) -> Optional[str]:
+        return None
+
+    def mem_limit(self, node: Node) -> Optional[str]:
+        return None
+
+    def cpus(self, node: Node) -> Optional[float]:
+        return None
+
+    def extra(self, topo: Topology):
+        with open("data/hostfile", "w") as f:
+            for node in topo.nodes.values():
+                f.write(node.ip + "\n")
+
+    def post_network_setup(self, topo: Topology, output):
+        pass
+
+    def post_pause(self, output):
+        pass
+

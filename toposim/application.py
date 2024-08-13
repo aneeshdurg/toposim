@@ -243,4 +243,3 @@ class Galois(Application):
 
     def post_pause(self, output):
         pass
-

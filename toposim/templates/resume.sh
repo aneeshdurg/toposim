@@ -10,4 +10,4 @@ docker start {{p.name}} &
 
 wait
 sleep 5
-./setup-networking
+./setup_networking

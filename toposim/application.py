@@ -298,7 +298,14 @@ class Cockroach(Application):
     def extra(self, topo: Topology):
         with print_to_script("setup-cluster.sh") as output:
             output(f'docker exec -it {self.node_names[0]} ./cockroach --host={self.node_ips[0]}:26357 init --insecure')
-            output(f'docker exec -it {self.node_names[0]} grep \'node starting\' /cockroach/cockroach-data/logs/cockroach.log -A 11')
+            output('while true; do')
+            output(f'   results=$(docker exec -it {self.node_names[0]} grep \'node starting\' /cockroach/cockroach-data/logs/cockroach.log -A 11)')
+            output('    if [[ -n "$results" ]]; then')
+            output('        echo "$results"')
+            output('        break')
+            output('    fi')
+            output('    sleep 1  # Wait for 1 second before trying again')
+            output('done')
 
     def post_network_setup(self, topo: Topology, output):
         pass

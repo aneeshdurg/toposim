@@ -20,3 +20,5 @@ wait
 {%- set net_name = net_name.lower() %}
 docker network rm {{net_name}}
 {%- endfor %}
+
+docker volume prune -f

@@ -336,7 +336,7 @@ class Spark(Application):
         return "spark:3.5.2"
 
     def volumes(self, node: Node) -> dict[str, str]:
-        return {"./data": "/opt/spark/working-dir/user-data"}
+        return {"./data": "/opt/spark/work-dir"}
 
     def environment(self) -> Optional[dict[str, str]]:
         return None

@@ -62,6 +62,10 @@ def generate_docker_compose(app: Application, topo: Topology):
             output(f"    networks:")
             output(f"      {node.networks[0].name}:")
             output(f"        ipv4_address: {node.ip}")
+            if ports := app.ports(node):
+                output(f"    ports:")
+                for src, dst in ports.items():
+                    output(f'      - "{src}:{dst}"')
             output(f"    cap_add:")
             output(f'      - "NET_ADMIN"')
             output(f"    volumes:")
@@ -71,6 +75,12 @@ def generate_docker_compose(app: Application, topo: Topology):
                 output(f"    environment: &environment")
                 for key, val in env.items():
                     output(f'      {key}: "{val}"')
+        if app.should_create_volumes():
+            output("volumes:")
+            for i, node in enumerate(topo.nodes.values()):
+                for src, dst in app.volumes(node).items():
+                    output(f"    {src}:")
+                    output(f"        external: false")
 
 
 def generate(prefix: str, filename: str, app: Application, subnet32: str):

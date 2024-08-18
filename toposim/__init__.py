@@ -75,11 +75,12 @@ def generate_docker_compose(app: Application, topo: Topology):
                 output(f"    environment: &environment")
                 for key, val in env.items():
                     output(f'      {key}: "{val}"')
-        output("volumes:")
-        for i, node in enumerate(topo.nodes.values()):
-            for src, dst in app.volumes(node).items():
-                output(f"    {src}:")
-                output(f"        external: false")
+        if app.should_create_volumes():
+            output("volumes:")
+            for i, node in enumerate(topo.nodes.values()):
+                for src, dst in app.volumes(node).items():
+                    output(f"    {src}:")
+                    output(f"        external: false")
 
 
 def generate(prefix: str, filename: str, app: Application, subnet32: str):

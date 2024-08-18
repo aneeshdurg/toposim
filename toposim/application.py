@@ -56,6 +56,8 @@ class Application(ABC):
     def post_pause(self, output):
         pass
 
+    def should_create_volumes():
+        return False
 
 class JanusGraphOnCassandra(Application):
     def initialize(self, topo: Topology):
@@ -312,3 +314,6 @@ class Cockroach(Application):
 
     def post_pause(self, output):
         pass
+
+    def should_create_volumes():
+        return True

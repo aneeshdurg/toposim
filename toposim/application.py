@@ -27,6 +27,9 @@ class Application(ABC):
     @abstractmethod
     def environment(self) -> Optional[dict[str, str]]:
         pass
+    
+    def environment_by_node(self, node: Node) -> Optional[dict[str, str]]:
+        return False
 
     @abstractmethod
     def entrypoint(self, node: Node) -> Optional[str]:
@@ -56,8 +59,11 @@ class Application(ABC):
     def post_pause(self, output):
         pass
 
-    def should_create_volumes():
+    def should_create_volumes(self) -> bool:
         return False
+
+    def depends_on(self, node: Node) -> Optional[str]:
+        return None
 
 class JanusGraphOnCassandra(Application):
     def initialize(self, topo: Topology):
@@ -315,5 +321,51 @@ class Cockroach(Application):
     def post_pause(self, output):
         pass
 
-    def should_create_volumes():
+    def should_create_volumes(self):
         return True
+    
+
+class Spark(Application):
+    def initialize(self, topo: Topology):
+        nodes = list(topo.nodes.values())
+        self.master_name = nodes[0].name
+        self.master_ip = nodes[0].ip
+        pass
+
+    def image(self, node: Node) -> str:
+        return "spark:3.5.2"
+
+    def volumes(self, node: Node) -> dict[str, str]:
+        return {"./data": "/opt/spark/working-dir/user-data"}
+
+    def environment(self) -> Optional[dict[str, str]]:
+        return None
+    
+    def environment_by_node(self, node: Node) -> Optional[dict[str, str]]:
+        return None
+
+    def entrypoint(self, node: Node) -> Optional[str]:
+        return "sleep inf"
+
+    def mem_limit(self, node: Node) -> Optional[str]:
+        return None
+
+    def cpus(self, node: Node) -> Optional[float]:
+        return None
+    
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        return {"8080": "8080"} if node.name == self.master_name else None
+
+    def extra(self, topo: Topology):
+        with print_to_script("setup-cluster.sh") as output:
+            for node in topo.nodes.values():
+                if node.name == self.master_name:
+                    output(f'docker exec -it {node.name} /opt/spark/sbin/start-master.sh -h {node.ip}')
+                else:
+                    output(f'docker exec -it {node.name} /opt/spark/sbin/start-worker.sh {self.master_ip}:7077 -h {node.ip}')
+
+    def post_network_setup(self, topo: Topology, output):
+        pass
+
+    def post_pause(self, output):
+        pass

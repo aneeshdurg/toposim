@@ -72,9 +72,15 @@ def generate_docker_compose(app: Application, topo: Topology):
             for src, dst in app.volumes(node).items():
                 output(f"      - {src}:{dst}")
             if env := app.environment():
-                output(f"    environment: &environment")
+                output(f"    environment:")
                 for key, val in env.items():
                     output(f'      {key}: "{val}"')
+            if env := app.environment_by_node(node):
+                for key, val in env.items():
+                    output(f'      {key}: "{val}"')
+            if depends_on := app.depends_on(node):
+                output("    depends_on:")
+                output(f"      - {depends_on}")
         if app.should_create_volumes():
             output("volumes:")
             for i, node in enumerate(topo.nodes.values()):

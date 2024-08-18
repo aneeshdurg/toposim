@@ -354,7 +354,7 @@ class Spark(Application):
         return None
     
     def ports(self, node: Node) -> Optional[dict[str, str]]:
-        return {"8080": "8080"} if node.name == self.master_name else None
+        return {"8080": "8080", "7077": "7077"} if node.name == self.master_name else None
 
     def extra(self, topo: Topology):
         with print_to_script("setup-cluster.sh") as output:

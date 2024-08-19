@@ -25,12 +25,9 @@ class Application(ABC):
         pass
 
     @abstractmethod
-    def environment(self) -> Optional[dict[str, str]]:
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
         pass
     
-    def environment_by_node(self, node: Node) -> Optional[dict[str, str]]:
-        return False
-
     @abstractmethod
     def entrypoint(self, node: Node) -> Optional[str]:
         pass
@@ -87,7 +84,7 @@ class JanusGraphOnCassandra(Application):
             f"./wait.sh": "/wait.sh",
         }
 
-    def environment(self) -> dict[str, str]:
+    def environment(self, node: Node) -> dict[str, str]:
         return {
             "CASSANDRA_SEEDS": f"{self.seeds}",
             "CASSANDRA_CLUSTER_NAME": "SolarSystem",
@@ -158,7 +155,7 @@ class TigerGraph(Application):
     def volumes(self, node: Node) -> dict[str, str]:
         return {"./data": "/home/tigergraph/data"}
 
-    def environment(self) -> Optional[dict[str, str]]:
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
         return None
 
     def entrypoint(self, node: Node) -> Optional[str]:
@@ -239,7 +236,7 @@ class Galois(Application):
     def volumes(self, node: Node) -> dict[str, str]:
         return {"./data": "/data"}
 
-    def environment(self) -> Optional[dict[str, str]]:
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
         return None
 
     def entrypoint(self, node: Node) -> Optional[str]:
@@ -280,7 +277,7 @@ class Cockroach(Application):
     def volumes(self, node: Node) -> dict[str, str]:
         return {f'{node.name}': '/cockroach/cockroach-data'}
 
-    def environment(self) -> Optional[dict[str, str]]:
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
         return None
 
     def entrypoint(self, node: Node) -> Optional[str]:
@@ -327,9 +324,9 @@ class Cockroach(Application):
 
 class Spark(Application):
     def initialize(self, topo: Topology):
-        nodes = list(topo.nodes.values())
-        self.master_name = nodes[0].name
-        self.master_ip = nodes[0].ip
+        self.nodes = list(topo.nodes.values())
+        self.master_name = self.nodes[0].name
+        self.master_ip = self.nodes[0].ip
         pass
 
     def image(self, node: Node) -> str:
@@ -338,23 +335,28 @@ class Spark(Application):
     def volumes(self, node: Node) -> dict[str, str]:
         return {"./data": "/opt/spark/work-dir"}
 
-    def environment(self) -> Optional[dict[str, str]]:
-        return None
-    
-    def environment_by_node(self, node: Node) -> Optional[dict[str, str]]:
-        return None
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
+        if node.name == self.master_name:
+            return {"SPARK_MASTER_HOST": f"{node.ip}", "SPARK_LOCAL_HOSTNAME ": f"{node.ip}"}
+        else:
+            return {"SPARK_LOCAL_HOSTNAME ": f"{node.ip}"}
 
     def entrypoint(self, node: Node) -> Optional[str]:
         return "sleep inf"
 
     def mem_limit(self, node: Node) -> Optional[str]:
-        return None
+        return '8g'
 
     def cpus(self, node: Node) -> Optional[float]:
-        return None
+        return 2
     
     def ports(self, node: Node) -> Optional[dict[str, str]]:
-        return {"8080": "8080", "7077": "7077"} if node.name == self.master_name else None
+        if node.name == self.master_name:
+            return {"8080": "8080", "7077": "7077","4040": "4040"}
+        else:
+            for i, n in enumerate(self.nodes):
+                if node.name == n.name:
+                    return {f"{8081 + i}": "8081"}
 
     def extra(self, topo: Topology):
         with print_to_script("setup-cluster.sh") as output:

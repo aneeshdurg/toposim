@@ -25,7 +25,6 @@ def generate_docker_compose(app: Application, topo: Topology):
     # the whitespace to render correctly in templates is a bit painful, so it's
     # easier to leave this in python so that we can easily modify it.
     with print_to_file("docker-compose.yml") as output:
-        output('version: "2.4"')
         output("networks:")
         for net in topo.networks:
             output(f"  {net.name}:")

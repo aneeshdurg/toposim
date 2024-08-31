@@ -252,6 +252,11 @@ class Galois(Application):
         return None
 
     def extra(self, topo: Topology):
+        try:
+            os.mkdir("data")
+        except FileExistsError:
+            pass
+
         with open("data/hostfile", "w") as f:
             for node in topo.nodes.values():
                 f.write(node.ip + "\n")

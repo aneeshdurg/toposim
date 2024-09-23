@@ -378,10 +378,9 @@ class Spark(Application):
                     output(
                         f"docker exec -it {node.name} /opt/spark/sbin/start-master.sh -h {node.ip}"
                     )
-                else:
-                    output(
-                        f"docker exec -it {node.name} /opt/spark/sbin/start-worker.sh {self.master_ip}:7077 -h {node.ip}"
-                    )
+                output(
+                    f"docker exec -it {node.name} /opt/spark/sbin/start-worker.sh {self.master_ip}:7077 -h {node.ip}"
+                )
 
     def post_network_setup(self, topo: Topology, output):
         pass

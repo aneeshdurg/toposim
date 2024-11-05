@@ -387,3 +387,10 @@ class Spark(Application):
 
     def post_pause(self, output):
         pass
+
+
+class GaloisM(Galois):
+    """Galois but with a custom branch"""
+
+    def image(self, node: Node) -> str:
+        return "galoism"

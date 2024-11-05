@@ -29,6 +29,8 @@ elif args.app == "cockroach":
     app = Cockroach()
 elif args.app == "spark":
     app = Spark()
+elif args.app == "galoism":
+    app = GaloisM()
 else:
     raise Exception("unknown app type")
 generate(args.prefix, args.filename, app, args.subnet32)

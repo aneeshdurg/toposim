@@ -118,11 +118,12 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         "cleanup",
         "mod_delay",
         "resume",
+        "tools/collect_queue_depth",
         "tools/egress",
         "tools/get_mac",
+        "tools/limit_bandwidth",
         "tools/run_in_ns",
         "tools/tcpdump",
-        "tools/limit_bandwidth",
     ]
     for t in templates:
         with print_to_script(f"{t}") as output:

@@ -3,7 +3,8 @@
 {% include 'run_in_ns_fn.sh' %}
 
 start_tcpdump() {
-  local output_dir="$1"
+  local -n args=$1
+  local output_dir="${args["outdir"]}"
   mkdir -p $output_dir
 
 {%- for n in topo.nodes +%}
@@ -28,22 +29,18 @@ stop_tcpdump() {
   sudo pkill tcpdump
 }
 
-usage() {
-    echo "Usage: $0 {start|stop} [output directory]"
-    exit 1
-}
-sudo true
+parser=$({
+  argparsh new $0 -d "run tcpdump on all host interfaces"
+  argparsh subparser_init --required true --metaname command
 
-# Main script logic
-case "$1" in
-  start)
-    [ $# -eq 2 ] || usage
-    start_tcpdump $2
-    ;;
-  stop)
-    stop_tcpdump
-    ;;
-  *)
-    usage
-    ;;
-esac
+  argparsh subparser_add start
+  argparsh set_defaults --subparser start --command start_tcpdump
+  argparsh add_arg --subparser start "outdir"
+
+  argparsh subparser_add stop
+  argparsh set_defaults --subparser stop --command stop_tcpdump
+})
+eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
+
+sudo true
+${args_["command"]} args_

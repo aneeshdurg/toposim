@@ -1,6 +1,15 @@
-# Usage ./tools/limit_bandwidth.sh <bandwidth>
+# Usage ./tools/limit_bandwidth.sh -b <bandwidth>
 #   if bandwidth is not supplied, then the default will be 1024
-bandwidth=${1:-1024}
+
+set -e
+parser=$({
+  argparsh new $0 -d "limit bandwidth on all links"
+  argparsh add_arg "-b" "--bandwidth" -- --type int --default 1024
+})
+eval $(argparsh parse $parser -- "$@")
+set +e
+echo "Setting bandwidth" $bandwidth
+
 
 {% include 'run_in_ns_fn.sh' %}
 

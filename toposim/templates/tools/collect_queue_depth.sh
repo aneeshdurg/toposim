@@ -30,10 +30,12 @@ parser=$({
   argparsh subparser_init --required true --metaname command
 
   argparsh subparser_add start
+  argparsh set_defaults --subparser start --command start_collection
   argparsh subparser_add stop
+  argparsh set_defaults --subparser stop --command stop_collection
 
   argparsh add_arg --subparser start "outdir"
-  argparsh add_arg --subparse start -i --interval -- --type int --default 1
+  argparsh add_arg --subparser start -i --interval -- --type int --default 1
 })
 eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
 set +e
@@ -41,10 +43,10 @@ set +e
 # Prompt for sudo password
 sudo true
 
-eval "${args_["command"]}_collection args_ &"
+${args_["command"]} args_ &
 childpid=$!
 
-if [ "${args_["command"]}" == "start" ]; then
+if [ "${args_["command"]}" == "start_collection" ]; then
   # Save the background proc id
   echo "started collection with PID" $childpid
   echo $childpid > $PIDFILE

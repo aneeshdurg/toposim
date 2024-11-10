@@ -36,5 +36,3 @@ def main():
     else:
         raise Exception("unknown app type")
     generate(args.prefix, args.filename, app, args.subnet32)
-
-

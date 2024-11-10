@@ -33,6 +33,7 @@ parser=$({
   argparsh subparser_add stop
 
   argparsh add_arg --subparser start "outdir"
+  argparsh add_arg --subparse start -i --interval -- --type int --default 1
 })
 eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
 set +e

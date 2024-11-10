@@ -6,7 +6,7 @@ performs under any network topology using docker.
 Usage:
 
 ```
-python -m toposim <out_dir> <config_file> [--app <janusgraph|tigergraph>]
+toposim <out_dir> <config_file> [--app <janusgraph|tigergraph>]
 # see --help for more options
 ```
 

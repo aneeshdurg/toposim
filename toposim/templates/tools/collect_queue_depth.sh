@@ -4,14 +4,14 @@
 
 PIDFILE=${TMPDIR:-/tmp}/collect_queue_depth_pid
 start_collection() {
-  local interval=$1
-
-  echo $$ > $PIDFILE
+  local -n args=$1
+  echo "saving results to" ${args["outdir"]}
+  mkdir -p ${args["outdir"]}
   while true; do
 {%- for n in topo.nodes +%}
-  run_in_ns {{n}} tc -s -d qdisc ls dev eth0
+  run_in_ns {{n}} tc -s -d qdisc ls dev eth0 >> ${args["outdir"]}/{{n}}.txt
 {%- endfor %}
-    sleep $interval
+    sleep ${args["interval"]}
   done
 }
 
@@ -24,19 +24,29 @@ usage() {
   exit 1
 }
 
+set -e
+parser=$({
+  argparsh new $0 -d "Collect queue depth during workload"
+  argparsh subparser_init --required true --metaname command
+
+  argparsh subparser_add start
+  argparsh subparser_add stop
+
+  argparsh add_arg --subparser start "outdir"
+})
+eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
+set +e
+
 # Prompt for sudo password
 sudo true
 
-# Main script logic
-case "$1" in
-  start)
-    [ $# -eq 2 ] || usage
-    start_collection $2
-    ;;
-  stop)
-    stop_collection
-    ;;
-  *)
-    usage
-    ;;
-esac
+eval "${COMMAND}_collection args_ &"
+childpid=$!
+
+if [ "$COMMAND" == "start" ]; then
+  # Save the background proc id
+  echo "started collection with PID" $childpid
+  echo $childpid > $PIDFILE
+else
+  wait
+fi

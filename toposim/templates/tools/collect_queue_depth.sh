@@ -41,10 +41,10 @@ set +e
 # Prompt for sudo password
 sudo true
 
-eval "${COMMAND}_collection args_ &"
+eval "${args_["command"]}_collection args_ &"
 childpid=$!
 
-if [ "$COMMAND" == "start" ]; then
+if [ "${args_["command"]}" == "start" ]; then
   # Save the background proc id
   echo "started collection with PID" $childpid
   echo $childpid > $PIDFILE

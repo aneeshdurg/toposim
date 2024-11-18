@@ -89,8 +89,7 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
     with open(filename) as f:
         data = json.load(f)
     os.makedirs(prefix, exist_ok=True)
-    source_name = Path(filename).name
-    shutil.copy(filename, f"{prefix}/{source_name}")
+    shutil.copy(filename, f"{prefix}/topology.json")
     os.chdir(prefix)
 
     names = set(data["links"].keys())

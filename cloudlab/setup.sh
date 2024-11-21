@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -ex
 
-echo "$@"
-
 LOGS=/tmp/setuplogs.txt
 touch $LOGS
 exec 2>&1 1>$LOGS
+
+echo "ARGUMENTS"
+echo "$@"
 
 # Add Docker's official GPG key:
 sudo apt-get update -y

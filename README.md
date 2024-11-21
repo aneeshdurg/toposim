@@ -24,6 +24,15 @@ tools like `wondershaper` in combination with `tools/run_in_ns`.
 ## Installing
 
 ```bash
+# Install argparsh for argument parsing in generated scripts
+# option 1:
+# install rust
+# $ curl https://sh.rustup.rs -sSf | sh -s -- -y
+# $ . ~/.cargo/env
+# $ cargo install argparsh
+# option2 :
+# $ pip install argparsh
+
 git clone https://github.com/aneeshdurg/toposim
 cd toposim
 pip install .

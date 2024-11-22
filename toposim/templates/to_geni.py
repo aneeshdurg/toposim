@@ -9,9 +9,12 @@ import geni.rspec.pg as rspec
 # Create a Request object to start building the RSpec.
 request = portal.context.makeRequestRSpec()
 
-def create_toposim_node(request, args: str=""):
+def create_toposim_node(request, hostname, args: list[str] | None=None):
+    if args is None:
+        args = []
     # Add a raw PC to the request.
-    node = request.RawPC("node")
+    node = request.RawPC(hostname)
+    args += ["--hostname", f"{hostname}"]
 
     # Request that a specific image be installed on this node
     node.disk_image = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-BETA"
@@ -24,22 +27,18 @@ def create_toposim_node(request, args: str=""):
     )
     node.addService(rspec.Execute(
         shell="bash",
-        command=f"/toposim/toposim-main/cloudlab/setup.sh {args}"
+        command=f"/toposim/toposim-main/cloudlab/setup.sh {' '.join(args)}"
     ))
     return node
 
 nodes = {}
 # Define all compute nodes
 {%- for n in topo.nodes +%}
-nodes["{{n}}"] = create_toposim_node(request,
-    "--hostname {{n}}"
-)
+nodes["{{n}}"] = create_toposim_node(request, "{{n}}")
 {%- endfor %}
 # Define all forwarding nodes
 {%- for p in topo.ports.values() +%}
-nodes["{{p.name}}"] = create_toposim_node(request, [
-    "--hostname {{p.name}} --dummy",
-])
+nodes["{{p.name}}"] = create_toposim_node(request, "{{p.name}}", ["--dummy"])
 {%- endfor %}
 
 # Link all nodes to their "ports"

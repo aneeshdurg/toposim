@@ -5,6 +5,26 @@ set -x
 
 {% include 'run_in_ns_fn.sh' %}
 
+parser=$({
+  argparsh new $0
+  argparsh add_arg "--cloudlab" -- --action store_true --help "Directly execute commands for the current host"
+})
+
+eval $(argparsh parse $parser --format assoc-array --name args -- "$@")
+
+#
+if [ "${args["cloudlab"]}" == "True" ]; then
+  run_in_ns() {
+    local tgt_hostname=$1
+    local my_hostname=$(hostname)
+    shift
+    if [ "$tgt_hostname" == "$my_hostname" ]; then
+      "$@"
+    fi
+  }
+fi
+
+
 forward() {
   run_in_ns $1 iptables -t nat -A POSTROUTING --out-interface $2 -j MASQUERADE
   run_in_ns $1 iptables -A FORWARD -o $2 -j ACCEPT

@@ -1,2 +1,5 @@
 __pycache__/
 tigergraph/license
+*.tar.gz
+geni-lib/
+*.rspec

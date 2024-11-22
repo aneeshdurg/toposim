@@ -130,6 +130,9 @@ def generate(prefix: str, filename: str, app: Application, subnet32: str):
         with print_to_script(f"{t}") as output:
             output(template(f"{t}.sh", topo))
 
+    with print_to_script(f"to_geni.py") as output:
+        output(template(f"to_geni.py", topo))
+
     # pause and setup_networking are special cases, since there might be
     # application specific behavior we need to inject
     with print_to_script("setup_networking") as output:

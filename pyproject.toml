@@ -19,7 +19,6 @@ classifiers = [
     "Topic :: Database :: Database Engines/Servers",
 ]
 dependencies = [
-  "argparsh",
   "jinja2>=3.1.4",
 ]
 

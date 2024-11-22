@@ -60,6 +60,7 @@ class Node:
 class Topology:
     prefix: str
     nodes: Dict[str, Node]
+    dummies: Dict[str, Node]
     ports: Dict[str, Port]
     # [n1, n2] -> net
     link_to_network: Dict[str, Dict[str, Network]]
@@ -103,6 +104,7 @@ class Topology:
         self.prefix = prefix
         self.networks = []
         self.nodes = nodes
+        self.dummies = {}
         self._subnet32 = subnet32
 
         routes = self.build_routing_table()
@@ -160,4 +162,5 @@ class Topology:
 
         dummies = [n for n in self.nodes if self.nodes[n].is_dummy]
         for d in dummies:
+            self.dummies[d] = self.nodes[d]
             del self.nodes[d]

@@ -33,6 +33,12 @@ tools like `wondershaper` in combination with `tools/run_in_ns`.
 # option2 :
 # $ pip install argparsh
 
+# Install geni-lib for cloudlab deployment (optional)
+git clone https://gitlab.flux.utah.edu/emulab/geni-lib
+cd geni-lib
+pip install .
+cd ..
+
 git clone https://github.com/aneeshdurg/toposim
 cd toposim
 pip install .

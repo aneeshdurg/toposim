@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-set -ex
 
+# Create logfile and redirect all logs to the new fd
 LOGS=/tmp/setuplogs.txt
 touch $LOGS
-exec 2>&1 1>$LOGS
+exec 3<> $LOGS
+exec 2>&3 1>&3
+
+# Turn on logging and exit on error
+set -ex
 
 sudo apt-get update -y
 sudo apt-get install -y python3-pip python3-dev

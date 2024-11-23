@@ -1,4 +1,4 @@
-"""Create a rspec file to be used with CloudLab"""
+"""cloudlab profile created with toposim for {{topo.prefix}} """
 
 # Import the Portal object.
 import geni.portal as portal
@@ -41,37 +41,20 @@ nodes["{{n}}"] = create_toposim_node(request, "{{n}}")
 nodes["{{p.name}}"] = create_toposim_node(request, "{{p.name}}", ["--dummy"])
 {%- endfor %}
 
+def getip(addr):
+    return rspec.IPv4Address(addr, "255.255.0.0")
+
 
 {%- for net in topo.networks +%}
 # NET {{net.name}}
-ifaces = [
+{{net.name}}_ifaces = [
     {%- for dev in net.devices %}
-    nodes["{{dev}}"].addInterface(name="{{net.name}}{{dev}}", address="{{net.devices[dev]}}"),
+    nodes["{{dev}}"].addInterface(name="{{net.name}}{{dev}}", address=getip("{{net.devices[dev]}}")),
     {%- endfor %}
 ]
-assert len(ifaces) < 3
-if len(ifaces) == 2:
-    request.Link(members=ifaces)
+assert len({{net.name}}_ifaces) < 3
+if len({{net.name}}_ifaces) == 2:
+    request.Link(members={{net.name}}_ifaces)
 {%- endfor %}
-
-# Link all nodes to their "ports"
-{%- for n in topo.nodes +%}
-request.Link(members=[nodes["{{n}}"], nodes["{{topo.ports[n].name}}"]])
-{%- endfor %}
-
-# Create all links between ports
-links = set()
-{%- for n in topo.nodes +%}
-    {%- for dst in topo.nodes[n].links +%}
-links.add(tuple(sorted(["{{topo.ports[n].name}}", "{{topo.ports[dst].name}}"])))
-    {%- endfor %}
-{%- endfor %}
-{%- for n in topo.dummies +%}
-    {%- for dst in topo.dummies[n].links +%}
-links.add(tuple(sorted(["{{topo.ports[n].name}}", "{{topo.ports[dst].name}}"])))
-    {%- endfor %}
-{%- endfor %}
-for link in links:
-    request.Link(members=[nodes[l] for l in link])
 
 portal.context.printRequestRSpec()

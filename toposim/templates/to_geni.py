@@ -41,6 +41,19 @@ nodes["{{n}}"] = create_toposim_node(request, "{{n}}")
 nodes["{{p.name}}"] = create_toposim_node(request, "{{p.name}}", ["--dummy"])
 {%- endfor %}
 
+
+{%- for net in topo.networks +%}
+# NET {{net.name}}
+ifaces = [
+    {%- for dev in net.devices %}
+    nodes["{{dev}}"].addInterface(name="{{net.name}}{{dev}}", address="{{net.devices[dev]}}"),
+    {%- endfor %}
+]
+assert len(ifaces) < 3
+if len(ifaces) == 2:
+    request.Link(members=ifaces)
+{%- endfor %}
+
 # Link all nodes to their "ports"
 {%- for n in topo.nodes +%}
 request.Link(members=[nodes["{{n}}"], nodes["{{topo.ports[n].name}}"]])

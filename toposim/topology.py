@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Union
 
 
 def log(*args, **kwargs):
@@ -32,11 +32,16 @@ class Network:
     name: str
     subnet16: str
     _counter: int = 2
+    devices: Dict[str, str] = field(default_factory=lambda:{})
 
     def vend_ip(self) -> str:
         ip = f"{self.subnet16}.0.{self._counter}"
         self._counter += 1
         return ip
+
+    def add_dev(self, device: Union["Port", "Node"]):
+        ip = device.attach(self)
+        self.devices[device.name] = ip
 
 
 @dataclass
@@ -44,6 +49,12 @@ class Port:
     name: str
     networks: List[Network] = field(default_factory=lambda: [])
     ips: List[str] = field(default_factory=lambda: [])
+
+    def attach(self, net: Network) -> str:
+        self.networks.append(net)
+        ip = net.vend_ip()
+        self.ips.append(ip)
+        return ip
 
 
 @dataclass
@@ -55,6 +66,12 @@ class Node:
     routes: Dict[str, int] = field(default_factory=lambda: {})
     networks: List[Network] = field(default_factory=lambda: [])
     ip: str = ""
+
+    def attach(self, net: Network) -> str:
+        assert self.ip == ""
+        self.networks.append(net)
+        self.ip = net.vend_ip()
+        return self.ip
 
 
 class Topology:
@@ -123,10 +140,8 @@ class Topology:
 
         for n in nodes:
             net = self.create_network()
-            nodes[n].networks.append(net)
-            nodes[n].ip = net.vend_ip()
-            ports[n].networks.append(net)
-            ports[n].ips.append(net.vend_ip())
+            net.add_dev(nodes[n])
+            net.add_dev(ports[n])
 
         unique_links: Set[Tuple[str, str]] = set()
         for n in nodes.values():
@@ -139,10 +154,8 @@ class Topology:
         link_to_fwd_ip: Dict[str, Dict[str, str]] = {n: {} for n in nodes}
         for node1, node2 in unique_links:
             net = self.create_network()
-            ports[node1].networks.append(net)
-            ports[node1].ips.append(net.vend_ip())
-            ports[node2].networks.append(net)
-            ports[node2].ips.append(net.vend_ip())
+            net.add_dev(ports[node1])
+            net.add_dev(ports[node2])
 
             link_to_network[node1][node2] = net
             link_to_fwd_ip[node1][node2] = ports[node2].ips[-1]

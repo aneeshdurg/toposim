@@ -5,6 +5,7 @@ LOGS=/tmp/setuplogs.txt
 touch $LOGS
 exec 2>&1 1>$LOGS
 
+sudo apt-get update -y
 sudo apt-get install -y python3-pip python3-dev
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 . ~/.cargo/env
@@ -31,7 +32,6 @@ sudo hostnamectl set-hostname "${args["hostname"]}"
 
 setup_docker() {
   # Add Docker's official GPG key:
-  sudo apt-get update -y
   sudo apt-get install -y ca-certificates curl
   sudo install -m 0755 -d /etc/apt/keyrings
   sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc

@@ -51,23 +51,15 @@ setup_docker() {
   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 }
 
-# Install docker
-# setup_docker
-
-# Setup galois
-# pushd /toposim/toposim-main/toposim/appdata/galois
-# docker build -t galois .
-# popd
+cd ~
 
 # Create the cluster from the config
 ~/.local/bin/toposim cluster /toposim/toposim-main/cloudlab/config.json
 
-# Set up routing
-./cluster/setup-networking --cloudlab
-
-# Run a cloudlab specific setup script if it exists
-setup_script=./cluster/cloudlab_setup.sh
-[ -e $setup_script ] && $setup_script
+# Setup ssh access between all hosts using the same key
+mkdir -p ~/.ssh
+cp /toposim/toposim-main/cloudlab/id_ecdsa* ~/.ssh/
+chmod 600 ~/.ssh/id_ecdsa*
 
 install_dummy() {
 }
@@ -81,3 +73,7 @@ if [ "${args["dummy"]}" == "True" ]; then
 else
   install_compute
 fi
+
+# Run a cloudlab specific setup script if it exists
+setup_script=./cluster/cloudlab_setup.sh
+[ -e $setup_script ] && $setup_script

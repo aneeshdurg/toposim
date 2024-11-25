@@ -1,6 +1,6 @@
 import os
 import shutil
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from pathlib import Path
 from typing import Optional
 
@@ -10,8 +10,24 @@ from .utils import print_to_file, print_to_script
 
 appdata_dir = Path(__file__).parent / "appdata"
 
+application_registry: dict[str, type["Application"]] = {}
 
-class Application(ABC):
+
+class RegisterApp(type):
+    """Register all subclasses into the application_registry global dictionary by their name"""
+
+    def __init__(cls, name, bases, clsdict):
+        if len(cls.mro()) > 2:
+            application_registry[cls.name()] = cls
+        super(RegisterApp, cls).__init__(name, bases, clsdict)
+
+
+class Application(metaclass=RegisterApp):
+    @classmethod
+    @abstractmethod
+    def name(cls) -> str:
+        pass
+
     @abstractmethod
     def initialize(self, topo: Topology):
         pass
@@ -64,6 +80,10 @@ class Application(ABC):
 
 
 class JanusGraphOnCassandra(Application):
+    @classmethod
+    def name(cls) -> str:
+        return "janusgraph"
+
     def initialize(self, topo: Topology):
         # Seeds for cassandra
         self.seeds = list([k for k in topo.nodes.keys() if "client" not in k])[0]
@@ -147,6 +167,10 @@ class TigerGraph(Application):
         else:
             self.license = license
 
+    @classmethod
+    def name(cls) -> str:
+        return "tigergraph"
+
     def initialize(self, topo: Topology):
         pass
 
@@ -228,6 +252,10 @@ class TigerGraph(Application):
 
 
 class Galois(Application):
+    @classmethod
+    def name(cls) -> str:
+        return "galois"
+
     def initialize(self, topo: Topology):
         pass
 
@@ -270,6 +298,10 @@ class Galois(Application):
 
 
 class Cockroach(Application):
+    @classmethod
+    def name(cls) -> str:
+        return "cockroach"
+
     def initialize(self, topo: Topology):
         self.node_names = []
         self.node_ips = []
@@ -333,6 +365,10 @@ class Cockroach(Application):
 
 
 class Spark(Application):
+    @classmethod
+    def name(cls) -> str:
+        return "spark"
+
     def initialize(self, topo: Topology):
         self.nodes = list(topo.nodes.values())
         self.master_name = self.nodes[0].name
@@ -391,6 +427,10 @@ class Spark(Application):
 
 class GaloisM(Galois):
     """Galois but with a custom branch"""
+
+    @classmethod
+    def name(cls) -> str:
+        return "galoism"
 
     def image(self, node: Node) -> str:
         return "galoism"

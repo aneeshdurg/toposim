@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -e
 
 parser=$({
@@ -5,8 +6,8 @@ parser=$({
   argparsh add_arg "toposimdir"
 })
 
-eval $(argparsh parse $parser --format assoc_array --name args -- "$@")
+eval $(argparsh parse $parser --format assoc-array --name args -- "$@")
 
-pushd ${args["toposimdir"]}
-docker build -t galois .
+pushd ${args["toposimdir"]}/toposim/appdata/galois
+sudo docker build -t galois .
 popd

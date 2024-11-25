@@ -22,7 +22,7 @@ parser=$({
   argparsh add_arg "--hostname" -- --required True
 })
 
-eval $(argparsh parse $parser --format assoc_array --name args -- "$@")
+eval $(argparsh parse $parser --format assoc-array --name args -- "$@")
 
 # We need --break-system-packages because we're not using a managed python
 # environment
@@ -78,4 +78,4 @@ fi
 
 # Run a cloudlab specific setup script if it exists
 setup_script=./cluster/cloudlab_setup.sh
-[ -e $setup_script ] && $setup_script
+[ -e $setup_script ] && $setup_script /toposim/toposim-main

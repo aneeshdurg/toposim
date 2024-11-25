@@ -12,7 +12,7 @@ def main():
     parser.add_argument(
         "--app",
         action="store",
-        default="janusgraph",
+        default=None,
         choices=application_registry.keys(),
     )
     parser.add_argument("--subnet32", action="store", default="174")
@@ -26,6 +26,4 @@ def main():
 
     args = parser.parse_args()
 
-    # Lookup application by name
-    app = application_registry[args.app]()
-    generate(args.prefix, args.filename, app, args.subnet32)
+    generate(args.prefix, args.filename, args.app, args.subnet32)

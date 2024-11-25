@@ -60,10 +60,14 @@ setup_docker() {
 # popd
 
 # Create the cluster from the config
-~/.local/bin/toposim cluster /toposim/toposim-main/cloudlab/config.json # --app galois
+~/.local/bin/toposim cluster /toposim/toposim-main/cloudlab/config.json
 
 # Set up routing
 ./cluster/setup-networking --cloudlab
+
+# Run a cloudlab specific setup script if it exists
+setup_script=./cluster/cloudlab_setup.sh
+[ -e $setup_script ] && $setup_script
 
 install_dummy() {
 }

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from .application import Application
+from .application import Application, application_registry
 from .topology import Node, Topology
 from .utils import print_to_file, print_to_script
 
@@ -85,12 +85,17 @@ def generate_docker_compose(app: Application, topo: Topology):
                     output(f"        external: false")
 
 
-def generate(prefix: str, filename: str, app: Application, subnet32: str):
+def generate(prefix: str, filename: str, app_name: str | None, subnet32: str):
     with open(filename) as f:
         data = json.load(f)
     os.makedirs(prefix, exist_ok=True)
     shutil.copy(filename, f"{prefix}/topology.json")
     os.chdir(prefix)
+
+    if app_name is None:
+        app_name = data["app"]
+        assert app_name in application_registry
+    app = application_registry[app_name]()
 
     names = set(data["links"].keys())
     nodes = {}

@@ -5,6 +5,7 @@ set -x
 
 {% include 'run_in_ns_fn.sh' %}
 
+# Parse arguments
 parser=$({
   argparsh new $0
   argparsh add_arg "--cloudlab" -- --action store_true --help "Directly execute commands for the current host"
@@ -12,8 +13,11 @@ parser=$({
 
 eval $(argparsh parse $parser --format assoc-array --name args -- "$@")
 
-#
 if [ "${args["cloudlab"]}" == "True" ]; then
+  # If we're deploying the network in cloudlab, then we only want to set routes
+  # on this host. We redefine `run_in_ns` to ignore all commands that run in
+  # "namespaces" (hosts) that aren't the host executing this script, and
+  # directly execute commands within this "namespace" to set routes.
   run_in_ns() {
     local tgt_hostname=$1
     local my_hostname=$(hostname)
@@ -25,11 +29,17 @@ if [ "${args["cloudlab"]}" == "True" ]; then
 fi
 
 
+# Enables forwarding on a particular interface for a given host
+#   $1 = namespace to run in
+#   $2 = interface to forward on
 forward() {
   run_in_ns $1 iptables -t nat -A POSTROUTING --out-interface $2 -j MASQUERADE
   run_in_ns $1 iptables -A FORWARD -o $2 -j ACCEPT
 }
 
+# Given a subnet, find the interface with an IP matching the input subnet
+#   $1 = namespace to run in
+#   $2 = subnet
 get_iface_for_subnet() {
   run_in_ns $1 ip addr | grep "inet $2\." | awk '{ print $NF }'
 }

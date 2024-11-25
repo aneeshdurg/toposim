@@ -1,10 +1,15 @@
 """cloudlab profile created with toposim for {{topo.prefix}} """
+import os
 
 # Import the Portal object.
 import geni.portal as portal
 
 # Import the ProtoGENI library.
 import geni.rspec.pg as rspec
+
+DEFAULT_TOPOSIM_URL = "https://github.com/aneeshdurg/toposim/archive/refs/heads/main.tar.gz"
+def get_toposim_url():
+    return os.environ.get("TOPOSIM_URL", DEFAULT_TOPOSIM_URL)
 
 # Create a Request object to start building the RSpec.
 request = portal.context.makeRequestRSpec()
@@ -19,12 +24,7 @@ def create_toposim_node(request, hostname, args: list[str] | None=None):
     # Request that a specific image be installed on this node
     node.disk_image = "urn:publicid:IDN+emulab.net+image+emulab-ops//UBUNTU24-64-BETA"
 
-    node.addService(
-        rspec.Install(
-            url="https://github.com/aneeshdurg/toposim/archive/refs/heads/main.tar.gz",
-            path="/toposim",
-        )
-    )
+    node.addService(rspec.Install(url=get_toposim_url(), path="/toposim"))
     node.addService(rspec.Execute(
         shell="bash",
         command=f"/toposim/toposim-main/cloudlab/setup.sh {' '.join(args)}"

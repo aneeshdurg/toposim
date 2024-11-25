@@ -6,5 +6,6 @@
     "r1": ["a", "b", "r2"],
     "r2": ["c", "r1"]
   },
-  "dummyNodes": ["r1", "r2"]
+  "dummyNodes": ["r1", "r2"],
+  "app": "galois"
 }

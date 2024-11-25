@@ -281,6 +281,8 @@ class Galois(Application):
         return None
 
     def extra(self, topo: Topology):
+        shutil.copy(appdata_dir / "galois/cloudlab_setup.sh", "cloudlab_setup.sh")
+
         try:
             os.mkdir("data")
         except FileExistsError:

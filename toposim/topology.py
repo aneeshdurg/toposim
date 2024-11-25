@@ -32,7 +32,7 @@ class Network:
     name: str
     subnet16: str
     _counter: int = 2
-    devices: Dict[str, str] = field(default_factory=lambda:{})
+    devices: Dict[str, str] = field(default_factory=lambda: {})
 
     def vend_ip(self) -> str:
         ip = f"{self.subnet16}.0.{self._counter}"

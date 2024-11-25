@@ -60,8 +60,10 @@ cd ~
 mkdir -p ~/.ssh
 cp /toposim/toposim-main/cloudlab/id_ecdsa* ~/.ssh/
 chmod 600 ~/.ssh/id_ecdsa*
+cat .ssh/id_ecdsa.pub >> .ssh/authorized_keys
 
 install_dummy() {
+  true
 }
 
 install_compute() {

@@ -26,7 +26,7 @@ usage() {
 
 parser=$({
   argparsh new $0 -d "Collect queue depth during workload"
-  argparsh subparser_init --required true --metaname command
+  argparsh subparser_init command --required true
 
   argparsh subparser_add start
   argparsh set_defaults --subparser start --command start_collection
@@ -36,7 +36,7 @@ parser=$({
   argparsh add_arg --subparser start "outdir"
   argparsh add_arg --subparser start -i --interval -- --type int --default 1
 })
-eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
+eval $(argparsh parse $parser --format assoc-array --name args_ -- "$@")
 
 # Prompt for sudo password
 sudo true

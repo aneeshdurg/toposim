@@ -31,7 +31,7 @@ stop_tcpdump() {
 
 parser=$({
   argparsh new $0 -d "run tcpdump on all host interfaces"
-  argparsh subparser_init --required true --metaname command
+  argparsh subparser_init command --required true
 
   argparsh subparser_add start
   argparsh set_defaults --subparser start --command start_tcpdump
@@ -40,7 +40,7 @@ parser=$({
   argparsh subparser_add stop
   argparsh set_defaults --subparser stop --command stop_tcpdump
 })
-eval $(argparsh parse $parser --format assoc_array --name args_ -- "$@")
+eval $(argparsh parse $parser --format assoc-array --name args_ -- "$@")
 
 sudo true
 ${args_["command"]} args_

@@ -126,19 +126,19 @@ def create_heatmap(traffic_matrix):
     for src in traffic_matrix:
         names.update(traffic_matrix[src].keys())
     names = sorted(names, key=lambda x: int(x[1:]))
-    
+
     # Create an index mapping for IP addresses
     ip_index = {ip: idx for idx, ip in enumerate(names)}
-    
+
     # Initialize the traffic matrix
     matrix_size = len(names)
     matrix = np.zeros((matrix_size, matrix_size), dtype=int)
-    
+
     # Populate the traffic matrix
     for src, dst_dict in traffic_matrix.items():
         for dst, count in dst_dict.items():
             matrix[ip_index[src]][ip_index[dst]] = count
-    
+
     # Create the heatmap
     plt.figure(figsize=(10, 8))
     plt.imshow(matrix, cmap='hot', interpolation='nearest')
@@ -153,7 +153,7 @@ def create_heatmap(traffic_matrix):
     output_file = f"{output_dir}/host-{label}.pdf"
     plt.savefig(output_file)
     plt.close()
-    
+
 
 # Function to create a heatmap from the traffic matrix
 def create_router_heatmap(traffic_matrix):
@@ -162,23 +162,23 @@ def create_router_heatmap(traffic_matrix):
     for src in traffic_matrix:
         names.update(traffic_matrix[src].keys())
     names = sorted(names, key=lambda x: int(x[1:]))
-    
+
     # Create an index mapping for IP addresses
     ip_index = {ip: idx for idx, ip in enumerate(names)}
-    
+
     hosts_per_router = 3 # hosts per router
     num_routers = 18 # routers
-    
+
     # Initialize the traffic matrix
     matrix = np.zeros((num_routers, num_routers), dtype=int)
-    
+
     # Populate the traffic matrix
     for src, dst_dict in traffic_matrix.items():
         for dst, count in dst_dict.items():
             matrix[ip_index[src] // hosts_per_router][ip_index[dst] // hosts_per_router] = count
-    
+
     router_names = [f'R{i}' for i in range(num_routers)]
-    
+
     # Create the heatmap
     plt.figure(figsize=(10, 8))
     plt.imshow(matrix, cmap='hot', interpolation='nearest')
@@ -193,8 +193,8 @@ def create_router_heatmap(traffic_matrix):
     output_file = f"{output_dir}/router-{label}.pdf"
     plt.savefig(output_file)
     plt.close()
-    
-    
+
+
 # Function to create a heatmap from the traffic matrix
 def create_group_heatmap(traffic_matrix):
     # Get all unique IP addresses
@@ -202,23 +202,23 @@ def create_group_heatmap(traffic_matrix):
     for src in traffic_matrix:
         names.update(traffic_matrix[src].keys())
     names = sorted(names, key=lambda x: int(x[1:]))
-    
+
     # Create an index mapping for IP addresses
     ip_index = {ip: idx for idx, ip in enumerate(names)}
-    
+
     hosts_per_group = 9 # hosts per group
     num_groups = 6 # groups
-    
+
     # Initialize the traffic matrix
     matrix = np.zeros((num_groups, num_groups), dtype=int)
-    
+
     # Populate the traffic matrix
     for src, dst_dict in traffic_matrix.items():
         for dst, count in dst_dict.items():
-            matrix[ip_index[src] // hosts_per_group][ip_index[dst] // hosts_per_group] = count
-    
+            matrix[ip_index[src] // hosts_per_group][ip_index[dst] // hosts_per_group] += count
+
     group_names = [f'G{i}' for i in range(num_groups)]
-    
+
     # Create the heatmap
     plt.figure(figsize=(10, 8))
     plt.imshow(matrix, cmap='hot', interpolation='nearest')

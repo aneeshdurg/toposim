@@ -175,7 +175,7 @@ def create_router_heatmap(traffic_matrix):
     # Populate the traffic matrix
     for src, dst_dict in traffic_matrix.items():
         for dst, count in dst_dict.items():
-            matrix[ip_index[src] // hosts_per_router][ip_index[dst] // hosts_per_router] = count
+            matrix[ip_index[src] // hosts_per_router][ip_index[dst] // hosts_per_router] += count
 
     router_names = [f'R{i}' for i in range(num_routers)]
 

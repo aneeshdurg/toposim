@@ -161,6 +161,8 @@ fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf)
         }
     }
 
+    res.push(traffic_matrix.clone());
+    traffic_matrix.clear();
     res
 }
 

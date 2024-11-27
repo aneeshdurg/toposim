@@ -133,38 +133,32 @@ fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf)
     loop {
         match reader.next() {
             Ok((offset, block)) => {
-                match block {
-                    PcapBlockOwned::LegacyHeader(_hdr) => {
-                        // save hdr.network (linktype)
+                if let PcapBlockOwned::Legacy(b) = block {
+                    let ts = b.ts_sec;
+                    let _ts_usec = b.ts_usec;
+                    if (ts - curr) as usize > interval {
+                        res.push(traffic_matrix.clone());
+                        traffic_matrix.clear();
+                        curr = ts;
                     }
-                    PcapBlockOwned::Legacy(b) => {
-                        let ts = b.ts_sec;
-                        let _ts_usec = b.ts_usec;
-                        if (ts - curr) as usize > interval {
-                            res.push(traffic_matrix.clone());
-                            traffic_matrix.clear();
-                            curr = ts;
+
+                    let pkt = EthernetPacket::new(b.data).unwrap();
+                    let ippkt = Ipv4Packet::new(pkt.payload()).unwrap();
+                    let src = u32::from(ippkt.get_source());
+                    let dst = u32::from(ippkt.get_destination());
+                    if ip_to_id.contains_key(&src) && ip_to_id.contains_key(&dst) {
+                        if !traffic_matrix.contains_key(&src) {
+                            let mut dstmap = HashMap::new();
+                            dstmap.insert(dst, 0);
+                            traffic_matrix.insert(src, dstmap);
+                        }
+                        let dstmap = traffic_matrix.get_mut(&src).unwrap();
+                        if !dstmap.contains_key(&dst) {
+                            dstmap.insert(dst, 0);
                         }
 
-                        let pkt = EthernetPacket::new(b.data).unwrap();
-                        let ippkt = Ipv4Packet::new(pkt.payload()).unwrap();
-                        let src = u32::from(ippkt.get_source());
-                        let dst = u32::from(ippkt.get_destination());
-                        if ip_to_id.contains_key(&src) && ip_to_id.contains_key(&dst) {
-                            if !traffic_matrix.contains_key(&src) {
-                                let mut dstmap = HashMap::new();
-                                dstmap.insert(dst, 0);
-                                traffic_matrix.insert(src, dstmap);
-                            }
-                            let dstmap = traffic_matrix.get_mut(&src).unwrap();
-                            if !dstmap.contains_key(&dst) {
-                                dstmap.insert(dst, 0);
-                            }
-
-                            *dstmap.get_mut(&dst).unwrap() += ippkt.payload().len() as u64;
-                        }
+                        *dstmap.get_mut(&dst).unwrap() += ippkt.payload().len() as u64;
                     }
-                    PcapBlockOwned::NG(_) => unreachable!(),
                 }
                 reader.consume(offset);
                 pbar.update(offset).unwrap();

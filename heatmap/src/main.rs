@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, BufWriter, Seek, SeekFrom};
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{mpsc::channel, Arc};
@@ -29,21 +30,20 @@ struct Args {
     nprocs: usize,
 }
 
+/// TopoSim config
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
     links: HashMap<String, Vec<String>>,
     #[serde(rename = "dummyNodes")]
     dummy_nodes: Option<Vec<String>>,
-    app: Option<String>,
 }
-
-type HeatMap = HashMap<u32, HashMap<u32, u64>>;
 
 impl Config {
     fn from_args(args: &Args) -> Config {
         serde_json::from_str(&std::fs::read_to_string(&args.config).unwrap()).unwrap()
     }
 
+    /// Get all hosts that are not dummyNodes
     fn get_hosts(self) -> Vec<String> {
         let mut hosts = vec![];
         for (k, _v) in self.links {
@@ -58,6 +58,27 @@ impl Config {
     }
 }
 
+// Structs for parsing docker-compose.yml files
+
+/// Extracts the ip address from a net entry
+#[derive(Debug, Serialize, Deserialize)]
+struct DockerServiceNetwork {
+    ipv4_address: String,
+}
+
+/// Extracts the networks from a service entry
+#[derive(Debug, Serialize, Deserialize)]
+struct DockerService {
+    networks: HashMap<String, DockerServiceNetwork>,
+}
+
+/// Extracts the services from a docker-compose config
+#[derive(Debug, Serialize, Deserialize)]
+struct DockerCompose {
+    services: HashMap<String, DockerService>,
+}
+
+/// Construct mapping from ip addrs to hostname
 fn get_ips_to_ids(args: &Args, hosts: &Vec<String>) -> HashMap<u32, String> {
     let prefix = if let Some(p) = args.prefix.clone() {
         p
@@ -71,39 +92,34 @@ fn get_ips_to_ids(args: &Args, hosts: &Vec<String>) -> HashMap<u32, String> {
             .to_string()
     };
 
-    let mut ip_to_id: HashMap<u32, String> = HashMap::new();
-    let dockercompose: Value =
+    let dockercompose: DockerCompose =
         serde_yaml::from_str(&std::fs::read_to_string("docker-compose.yml").unwrap()).unwrap();
-    if let Value::Mapping(m) = dockercompose {
-        let services = m.get("services").unwrap();
-        if let Value::Mapping(m) = services {
-            for h in hosts {
-                if let Value::Mapping(m) = m.get(format!("{}_{}", prefix, h)).unwrap() {
-                    if let Value::Mapping(m) = m.get("networks").unwrap() {
-                        for net in m.values() {
-                            if let Value::String(ipv4) = net.get("ipv4_address").unwrap() {
-                                let ipv4addr: std::net::Ipv4Addr =
-                                    ipv4.to_string().parse().unwrap();
-                                ip_to_id.insert(u32::from(ipv4addr), h.clone());
-                            }
-                        }
-                    } else {
-                        panic!("unexpected yaml")
-                    }
-                } else {
-                    panic!("unexpected yaml")
-                }
-            }
-        } else {
-            panic!("unexpected yaml")
+    let mut ip_to_id: HashMap<u32, String> = HashMap::new();
+    for (host, service) in dockercompose.services {
+        let h = host[(prefix.len() + 1)..].to_string();
+        if !hosts.contains(&h) {
+            continue;
         }
-    } else {
-        panic!("unexpected yaml")
+        for net in service.networks.values() {
+            let ip: Ipv4Addr = net.ipv4_address.parse().unwrap();
+            ip_to_id.insert(u32::from(ip), h.clone());
+        }
     }
 
     ip_to_id
 }
 
+/// Get group no for a given ip
+fn get_group(ip_to_id: &HashMap<u32, String>, ip: u32) -> usize {
+    let name = &ip_to_id[&ip][1..];
+    let id: u64 = name.parse().unwrap();
+    ((id - 1) / 9) as usize
+}
+
+/// Type alias for traffix matrix (ip src -> (ip dst -> bytes sent))
+type HeatMap = HashMap<u32, HashMap<u32, u64>>;
+
+/// Build a sequence of heatmaps for a given file, 1 heatmap every `interval`s
 fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf) -> Vec<HeatMap> {
     let mut file = File::open(file).unwrap();
     let nbytes = file.seek(SeekFrom::End(0)).unwrap();
@@ -166,6 +182,7 @@ fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf)
     res
 }
 
+/// Combine traffic matrices for the same timestep into a single matrix
 fn merge_traffic_matrices(i: usize, vec_matrices: Arc<Vec<Vec<HeatMap>>>) -> HeatMap {
     let mut merged: HeatMap = HashMap::new();
     for matrices in &*vec_matrices {
@@ -238,14 +255,9 @@ fn main() {
             const NUM_GROUPS: usize = 6;
             let mut group_matrix = [[0u64; NUM_GROUPS]; NUM_GROUPS];
 
-            let get_group = |ip: u32| -> usize {
-                let name = &ip_to_id[&ip][1..];
-                let id: u64 = name.parse().unwrap();
-                ((id - 1) / 9) as usize
-            };
             for (src, dstmap) in host_matrix {
                 for (dst, v) in dstmap {
-                    group_matrix[get_group(src)][get_group(dst)] += v;
+                    group_matrix[get_group(&ip_to_id, src)][get_group(&ip_to_id, dst)] += v;
                 }
             }
 

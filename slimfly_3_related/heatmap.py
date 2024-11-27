@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from scapy.all import rdpcap
+from scapy.all import PcapReader
 from collections import defaultdict
 import glob
 import multiprocessing as mp
@@ -92,8 +92,8 @@ def default_dict_int():
 
 def process_pcap_file(pcap_file):
     traffic_matrix = defaultdict(default_dict_int)
-    packets = rdpcap(pcap_file)
-    for pkt in packets:
+    pcap_reader = PcapReader(pcap_file)
+    for pkt in pcap_reader:
         if pkt.haslayer('IP'):
             src_ip = pkt['IP'].src
             dst_ip = pkt['IP'].dst

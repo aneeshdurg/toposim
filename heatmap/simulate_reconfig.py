@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Prediction of how much traffic is saved by dynamic reconfiguration"""
 
 import argparse
@@ -13,6 +14,7 @@ parser.add_argument(
 )
 parser.add_argument("interval", type=float, help="Interval between each matrix")
 parser.add_argument("--num-groups", type=int, default=6)
+parser.add_argument("--show-transformations", action="store_true")
 args = parser.parse_args()
 
 num_groups = args.num_groups
@@ -123,29 +125,51 @@ with mp.Pool(processes=32) as pool:
     ts_costs = pool.map(process_ts, range(N))
 
 cost_per_config = sum(np.matrix(ts_costs))
+print(f"{cost_per_config=}")
+print()
+
 print("min cost", np.min(cost_per_config))
 print("min cost config", np.argmin(cost_per_config))
+print("max cost", np.max(cost_per_config))
+print("max cost config", np.argmax(cost_per_config))
+print("mean cost", np.mean(cost_per_config))
+
+best = np.min(cost_per_config)
+worst = np.max(cost_per_config)
+print("worst vs best", (worst - best) / worst)
+
+def show_report(cost, path):
+    print(f"cost with reconfig every {interval}s", cost)
+    if args.show_transformations:
+        print("transformations:", path)
+    print("min cost vs reconfig")
+    print("  abs improvement: ", np.min(cost_per_config) - cost)
+    print(
+        "  rel improvement: ",
+        100.0 * (np.min(cost_per_config) - cost) / np.min(cost_per_config),
+        "%",
+    )
+    print("max cost vs reconfig")
+    print("  abs improvement: ", np.max(cost_per_config) - cost)
+    print(
+        "  rel improvement: ",
+        100.0 * (np.max(cost_per_config) - cost) / np.max(cost_per_config),
+        "%",
+    )
+    print("mean cost vs reconfig")
+    print("  abs improvement: ", np.mean(cost_per_config) - cost)
+    print(
+        "  rel improvement: ",
+        100.0 * (np.mean(cost_per_config) - cost) / np.mean(cost_per_config),
+        "%",
+    )
+
+print("\nOptimal Reconfiguration strategy:")
 best_case = sum(min(x) for x in ts_costs)
 best_path = [np.argmin(x) for x in ts_costs]
+show_report(best_case, best_path)
 
+print("\nWorst Reconfiguration strategy:")
 worst_case = sum(max(x) for x in ts_costs)
 worst_path = [np.argmax(x) for x in ts_costs]
-print(f"cost with reconfig every {interval}s", best_case)
-print("transformations:", best_path)
-print("abs improvement: ", np.min(cost_per_config) - best_case)
-print(
-    "rel improvement: ",
-    100.0 * (np.min(cost_per_config) - best_case) / np.min(cost_per_config),
-    "%",
-)
-
-print(f"cost with reconfig every {interval}s", worst_case)
-print("transformations:", worst_path)
-print("abs improvement: ", np.min(cost_per_config) - worst_case)
-print(
-    "rel improvement: ",
-    100.0 * (np.min(cost_per_config) - worst_case) / np.min(cost_per_config),
-    "%",
-)
-
-## TODO best static path vs worst static path
+show_report(worst_case, worst_path)

@@ -2,7 +2,6 @@
 """Prediction of how much traffic is saved by dynamic reconfiguration"""
 
 import argparse
-import sys
 import os
 import multiprocessing as mp
 
@@ -138,6 +137,7 @@ best = np.min(cost_per_config)
 worst = np.max(cost_per_config)
 print("worst vs best", (worst - best) / worst)
 
+
 def show_report(cost, path):
     print(f"cost with reconfig every {interval}s", cost)
     if args.show_transformations:
@@ -163,6 +163,7 @@ def show_report(cost, path):
         100.0 * (np.mean(cost_per_config) - cost) / np.mean(cost_per_config),
         "%",
     )
+
 
 print("\nOptimal Reconfiguration strategy:")
 best_case = sum(min(x) for x in ts_costs)

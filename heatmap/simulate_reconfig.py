@@ -135,7 +135,7 @@ print("mean cost", np.mean(cost_per_config))
 
 best = np.min(cost_per_config)
 worst = np.max(cost_per_config)
-print("worst vs best", (worst - best) / worst)
+print("worst vs best", 100 * (worst - best) / worst, "%")
 
 
 def show_report(cost, path):

@@ -11,7 +11,6 @@ use glob::glob;
 use pcap_parser::{traits::PcapReaderIterator, *};
 use pnet::packet::{ethernet::EthernetPacket, ipv4::Ipv4Packet, Packet};
 use serde::{Deserialize, Serialize};
-use serde_yaml::Value;
 use threadpool::ThreadPool;
 use tqdm::pbar;
 
@@ -165,9 +164,11 @@ fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf)
             }
             Err(PcapError::Eof) => break,
             Err(PcapError::Incomplete(_)) => {
-                reader.refill().unwrap();
+                if let Err(_) = reader.refill() {
+                    break;
+                }
             }
-            Err(e) => panic!("error while reading: {:?}", e),
+            Err(_) => break,
         }
     }
 

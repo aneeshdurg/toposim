@@ -3,8 +3,8 @@
 
 parser=$({
   argparsh new $0 -d "limit bandwidth on all links"
-  argparsh add_arg "-b" "--bandwidth" -- --type int --default 1024
-  argparsh add_arg "-c" "--clear" -- --action store_true
+  argparsh add_arg --type int --default 1024 -- "-b" "--bandwidth"
+  argparsh add_arg --action store_true -- "-c" "--clear"
 })
 eval $(argparsh parse $parser -- "$@")
 

@@ -8,7 +8,7 @@ set -x
 # Parse arguments
 parser=$({
   argparsh new $0
-  argparsh add_arg "--cloudlab" -- --action store_true --help "Directly execute commands for the current host"
+  argparsh add_arg --action store_true --helptext "Directly execute commands for the current host" -- "--cloudlab"
 })
 
 eval $(argparsh parse $parser --format assoc-array --name args -- "$@")

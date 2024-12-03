@@ -3,7 +3,7 @@ set -x
 
 parser=$({
   argparsh new $0 -d "Modify delay on network interfaces"
-  argparsh add_arg "delay" -- --type int
+  argparsh add_arg --type int -- "delay"
 })
 eval $(argparsh parse $parser -- "$@")
 

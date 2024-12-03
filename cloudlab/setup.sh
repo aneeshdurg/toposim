@@ -18,8 +18,8 @@ cargo install argparsh
 
 parser=$({
   argparsh new $0
-  argparsh add_arg "--dummy" -- --action store_true
-  argparsh add_arg "--hostname" -- --required True
+  argparsh add_arg --action store_true -- "--dummy"
+  argparsh add_arg --required -- "--hostname"
 })
 
 eval $(argparsh parse $parser --format assoc-array --name args -- "$@")

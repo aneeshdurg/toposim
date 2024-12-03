@@ -31,14 +31,14 @@ stop_tcpdump() {
 
 parser=$({
   argparsh new $0 -d "run tcpdump on all host interfaces"
-  argparsh subparser_init command --required true
+  argparsh add_subparser command --required
 
-  argparsh subparser_add start
-  argparsh set_defaults --subparser start --command start_tcpdump
-  argparsh add_arg --subparser start "outdir"
+  argparsh add_subcommand start
+  argparsh set_defaults --subcommand start --command start_tcpdump
+  argparsh add_arg --subcommand start "outdir"
 
-  argparsh subparser_add stop
-  argparsh set_defaults --subparser stop --command stop_tcpdump
+  argparsh add_subcommand stop
+  argparsh set_defaults --subcommand stop --command stop_tcpdump
 })
 eval $(argparsh parse $parser --format assoc-array --name args_ -- "$@")
 

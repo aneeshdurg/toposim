@@ -122,6 +122,7 @@ def generate(prefix: str, filename: str, app_name: str | None, subnet32: str):
     templates = [
         "add_delay",
         "cleanup",
+        "exec",
         "mod_delay",
         "resume",
         "tools/collect_queue_depth",

@@ -118,6 +118,7 @@ def generate(prefix: str, filename: str, app_name: str | None, subnet32: str):
     generate_docker_compose(app, topo)
     app.extra(topo)
 
+    gitignore = ""
     os.makedirs("tools", exist_ok=True)
     templates = [
         "add_delay",
@@ -133,19 +134,27 @@ def generate(prefix: str, filename: str, app_name: str | None, subnet32: str):
         "tools/tcpdump",
     ]
     for t in templates:
-        with print_to_script(f"{t}") as output:
+        gitignore += f"{t}\n"
+        with print_to_script(t) as output:
             output(template(f"{t}.sh", topo))
 
     with print_to_script(f"to_geni.py") as output:
+        gitignore += f"to_geni.py\n"
         output(template(f"to_geni.py", topo))
 
     # pause and setup_networking are special cases, since there might be
     # application specific behavior we need to inject
     with print_to_script("setup_networking") as output:
+        gitignore += f"setup_networking\n"
         output(template("setup_networking.sh", topo))
         app.post_network_setup(topo, output)
         output("wait")
 
     with print_to_script("pause") as output:
+        gitignore += f"pause\n"
         output(template("pause.sh", topo))
         app.post_pause(output)
+
+    # Set all generated files to be untracked by git
+    with print_to_script(".gitignore") as output:
+        output(gitignore)

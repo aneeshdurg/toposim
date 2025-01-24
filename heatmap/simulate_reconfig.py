@@ -4,6 +4,7 @@
 import argparse
 import os
 import multiprocessing as mp
+import random
 
 import numpy as np
 
@@ -174,3 +175,20 @@ print("\nWorst Reconfiguration strategy:")
 worst_case = sum(max(x) for x in ts_costs)
 worst_path = [np.argmax(x) for x in ts_costs]
 show_report(worst_case, worst_path)
+
+print("\nDelayed Reconfiguration strategy:")
+curr_config = [0]
+curr_cost = 0
+for i in range(1, len(ts_costs)):
+    curr_cost += ts_costs[i][curr_config[-1]]
+    curr_config.append(np.argmin(ts_costs[i]))
+show_report(curr_cost, curr_config)
+
+print("\nRandom Reconfiguration strategy:")
+random_cost = 0
+random_path = []
+for i in range(len(ts_costs)):
+    config = random.randint(0, len(ts_costs[0]) - 1)
+    random_cost += ts_costs[i][config]
+    random_path.append(config)
+show_report(random_cost, random_path)

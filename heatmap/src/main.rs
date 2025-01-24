@@ -24,7 +24,7 @@ struct Args {
     #[arg(long)]
     prefix: Option<String>,
     #[arg(short, long, default_value = "10")]
-    interval: usize,
+    interval: f64,
     #[arg(long, default_value = "16")]
     nprocs: usize,
 }
@@ -119,7 +119,7 @@ fn get_group(ip_to_id: &HashMap<u32, String>, ip: u32) -> usize {
 type HeatMap = HashMap<u32, HashMap<u32, u64>>;
 
 /// Build a sequence of heatmaps for a given file, 1 heatmap every `interval`s
-fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf) -> Vec<HeatMap> {
+fn process_pcap(interval: f64, ip_to_id: &HashMap<u32, String>, file: PathBuf) -> Vec<HeatMap> {
     let mut file = File::open(file).unwrap();
     let nbytes = file.seek(SeekFrom::End(0)).unwrap();
     file.seek(SeekFrom::Start(0)).unwrap();
@@ -127,18 +127,19 @@ fn process_pcap(interval: usize, ip_to_id: &HashMap<u32, String>, file: PathBuf)
     let mut pbar = pbar(Some(nbytes as usize));
 
     let mut res = vec![];
-    let mut curr = 0;
+    let mut curr = 0.0;
     let mut traffic_matrix: HeatMap = HashMap::new();
     loop {
         match reader.next() {
             Ok((offset, block)) => {
                 if let PcapBlockOwned::Legacy(b) = block {
                     let ts = b.ts_sec;
-                    let _ts_usec = b.ts_usec;
-                    if (ts - curr) as usize > interval {
+                    let ts_usec = b.ts_usec;
+                    let t: f64 = (ts as f64) + (ts_usec as f64) / 1000000.0;
+                    if (t - curr) as f64 > interval {
                         res.push(traffic_matrix.clone());
                         traffic_matrix.clear();
-                        curr = ts;
+                        curr = t;
                     }
 
                     let pkt = EthernetPacket::new(b.data).unwrap();

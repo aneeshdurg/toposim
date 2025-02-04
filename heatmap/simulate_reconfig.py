@@ -171,10 +171,43 @@ best_case = sum(min(x) for x in ts_costs)
 best_path = [np.argmin(x) for x in ts_costs]
 show_report(best_case, best_path)
 
-print("\nWorst Reconfiguration strategy:")
-worst_case = sum(max(x) for x in ts_costs)
-worst_path = [np.argmax(x) for x in ts_costs]
-show_report(worst_case, worst_path)
+print("\nSingle OCS change at a time reconfig strategy (oracle):")
+curr_config = [int(np.argmin(ts_costs[0]))]
+curr_cost = min(ts_costs[0])
+def hamming_distance(a, b):
+    bs_a = bin(a)[2:]
+    bs_b = bin(b)[2:]
+    max_len = max(len(bs_a), len(bs_b))
+    bs_a = '0' * (max_len - len(bs_a)) + bs_a
+    bs_b = '0' * (max_len - len(bs_b)) + bs_b
+    d = 0
+    for (ca, cb) in zip(bs_a, bs_b):
+        if ca != cb:
+            d += 1
+    return d
+for i in range(1, len(ts_costs)):
+    # Evaluate every config that differs by at most 1 bit from the current config
+    min_cost = -1
+    min_config = -1
+    for config, cost in enumerate(ts_costs[i]):
+        if hamming_distance(config, curr_config[-1]) > 1:
+            continue
+        if min_config == -1:
+            min_config = config
+            min_cost = cost
+        else:
+            if min_cost > cost:
+                min_cost = cost
+                min_config = config
+    assert min_config >= 0
+    curr_cost += min_cost
+    curr_config.append(min_config)
+show_report(curr_cost, curr_config)
+
+# print("\nWorst Reconfiguration strategy:")
+# worst_case = sum(max(x) for x in ts_costs)
+# worst_path = [np.argmax(x) for x in ts_costs]
+# show_report(worst_case, worst_path)
 
 print("\nDelayed Reconfiguration strategy:")
 curr_config = [0]
@@ -184,11 +217,11 @@ for i in range(1, len(ts_costs)):
     curr_config.append(np.argmin(ts_costs[i]))
 show_report(curr_cost, curr_config)
 
-print("\nRandom Reconfiguration strategy:")
-random_cost = 0
-random_path = []
-for i in range(len(ts_costs)):
-    config = random.randint(0, len(ts_costs[0]) - 1)
-    random_cost += ts_costs[i][config]
-    random_path.append(config)
-show_report(random_cost, random_path)
+# print("\nRandom Reconfiguration strategy:")
+# random_cost = 0
+# random_path = []
+# for i in range(len(ts_costs)):
+#     config = random.randint(0, len(ts_costs[0]) - 1)
+#     random_cost += ts_costs[i][config]
+#     random_path.append(config)
+# show_report(random_cost, random_path)

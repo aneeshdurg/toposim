@@ -202,6 +202,7 @@ fn merge_traffic_matrices(i: usize, vec_matrices: Arc<Vec<Vec<HeatMap>>>) -> Hea
 
 fn main() {
     let args = Args::parse();
+    assert!(args.interval > 0.);
 
     let config = Config::from_args(&args);
     let hosts = config.get_hosts();

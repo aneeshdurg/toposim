@@ -33,7 +33,7 @@ fi
 #   $1 = namespace to run in
 #   $2 = interface to forward on
 forward() {
-  run_in_ns $1 iptables -t nat -A POSTROUTING --out-interface $2 -j MASQUERADE
+  run_in_ns $1 iptables -t nat -A POSTROUTING --out-interface $2 -j ACCEPT
   run_in_ns $1 iptables -A FORWARD -o $2 -j ACCEPT
 }
 

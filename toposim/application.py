@@ -436,3 +436,54 @@ class GaloisM(Galois):
 
     def image(self, node: Node) -> str:
         return "galoism"
+
+
+class Powerlyra(Application):
+    @classmethod
+    def name(cls) -> str:
+        return "powerlyra"
+
+    def initialize(self, topo: Topology):
+        pass
+
+    def image(self, node: Node) -> str:
+        return "powerlyra"
+
+    def volumes(self, node: Node) -> dict[str, str]:
+        return {"./sgp": "/sgp"}
+
+    def environment(self, node: Node) -> Optional[dict[str, str]]:
+        return None
+
+    def entrypoint(self, node: Node) -> Optional[str]:
+        return None
+
+    def mem_limit(self, node: Node) -> Optional[str]:
+        return None
+
+    def cpus(self, node: Node) -> Optional[float]:
+        return None
+
+    def ports(self, node: Node) -> Optional[dict[str, str]]:
+        return None
+
+    def extra(self, topo: Topology):
+        try:
+            os.mkdir("sgp")
+        except FileExistsError:
+            pass
+
+        with open("sgp/hostfile", "w") as f:
+            for node in topo.nodes.values():
+                f.write(node.ip + "\n")
+                
+        shutil.copytree(appdata_dir / "powerlyra/parameters", "sgp/parameters", dirs_exist_ok=True)
+        shutil.copytree(appdata_dir / "powerlyra/powerlyra", "sgp/powerlyra", dirs_exist_ok=True)
+        shutil.copytree(appdata_dir / "powerlyra/scripts", "sgp/scripts", dirs_exist_ok=True)
+        shutil.copytree(appdata_dir / "powerlyra/datasets", "sgp/datasets", dirs_exist_ok=True)
+
+    def post_network_setup(self, topo: Topology, output):
+        pass
+
+    def post_pause(self, output):
+        pass

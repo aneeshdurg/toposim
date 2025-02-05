@@ -1,0 +1,53 @@
+{
+	"name" : "twitter",
+	"runs" : {
+		"dataset-name" : "twitter",
+		"snap-dataset" : "twitter_compressed/snap.txt",
+		"adj-dataset" : "twitter_compressed/adj.txt",
+		"log-folder" : "twitter-logs",
+		"result-file" : "twitter-results.csv",
+		"nedges" : "1468364884",
+		"nvertices" : "41652230",
+		"worker-per-node" : 1,
+		"workers" : [16],
+		"ingress" : [
+			{"name" : "random"},
+			{"name" : "dbh"},
+			{"name" : "grid"},
+			{"name" : "hdrf"},
+			{"name" : "hybrid"},
+			{"name" : "hybrid_ginger"},
+			{"name" : "random_ec"},
+			{"name" : "ldg"},
+			{"name" : "fennel"},
+			{
+				"name" : "metis",
+				"lookup" : {
+					"8" : "twitter_compressed/metis-8.txt",
+					"16" : "twitter_compressed/metis-16.txt",
+					"32" : "twitter_compressed/metis-32.txt",
+					"64" : "twitter_compressed/metis-64.txt",
+					"128" : "twitter_compressed/metis-128.txt"
+				}
+			},
+			{
+				"name" : "cuttana",
+				"lookup" : {
+					"16" : "twitter_compressed/cuttana-16.txt"
+				}
+			}
+		],
+		"algorithm" : [
+			{
+				"name" : "pagerank",
+				"iterations" : 20
+			},
+			{
+				"name" : "sssp",
+				"source": "6257722"
+			},
+			{"name" : "connected_component"}
+		],
+        "thread-count": 1
+	}
+}

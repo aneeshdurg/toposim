@@ -313,7 +313,7 @@ show_report(curr_cost, curr_config)
 
 
 print("\nIntergroup Reconfiguration strategy:")
-# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig
+# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig at each timestamp
 with mp.Pool(processes=32) as pool:
     ts_costs = pool.map(intergroup_process_ts, range(N))
 

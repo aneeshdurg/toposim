@@ -63,6 +63,88 @@ paths_ = {
 }
 racks = [[0, 3], [1, 4], [2, 5]]
 
+def compute_cost(matrix, paths):
+    combined_matrix = np.zeros((num_groups, num_groups), dtype=int)
+    for src in range(num_groups):
+        for dst in range(num_groups):
+            if src == dst:
+                # print(src, dst, "+", src, dst)
+                combined_matrix[src][dst] += matrix[src][dst]
+                continue
+            curr = src
+            while True:
+                next_hop = paths[(curr, dst)]
+                # print(curr, next_hop, "+", src, dst)
+                combined_matrix[curr][next_hop] += matrix[src][dst]
+                curr = next_hop
+                if curr == dst:
+                    break
+    return sum(sum(combined_matrix))
+
+def intergroup_process_ts(ts):
+    matrix = np.zeros((num_groups, num_groups))
+    with open(output_dir + f"/matrix-ts{ts}.txt") as f:
+        m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]
+        for i in range(num_groups):
+            for j in range(num_groups):
+                matrix[i][j] = m[i][j]
+                
+    cost_no_reconfig = compute_cost(matrix, paths_)
+    # Step 1. Split the matrix into sub-matrices for each OCS
+    def split_matrix(matrix):
+        sub_matrices = []
+        NR = len(racks)
+        for i in range(NR):
+            for j in range(i + 1, NR):
+                rack1 = racks[i]
+                rack2 = racks[j]
+                sub_matrix = np.zeros((2, 2))
+                for g1 in range(2):
+                    for g2 in range(2):
+                        # print(f'{g1} {g2} {rack1[g1]} {rack2[g2]} {matrix[rack1[g1]][rack2[g2]]} {matrix[rack2[g2]][rack1[g1]]}')
+                        sub_matrix[g1][g2] += matrix[rack1[g1]][rack2[g2]]
+                        sub_matrix[g1][g2] += matrix[rack2[g2]][rack1[g1]]
+                sub_matrices.append(sub_matrix)
+        return sub_matrices
+            
+    # print(matrix)
+    sub_matrices = split_matrix(matrix)
+    CROSS = 0
+    BAR = 1
+    def ocs_state(matrix):
+        return BAR if matrix[0][0] + matrix[1][1] > matrix[0][1] + matrix[1][0] else CROSS
+    # Step 2. Compute the OCS state of each sub-matrix
+    ocs_states = []
+    for sub_matrix in sub_matrices:
+        # print(sub_matrix)
+        ocs_states.append(ocs_state(sub_matrix))
+    print(ocs_states)
+    # Step 3. Reconfigure the cross-connection of OCSes
+    def reconfigure(ocs_states):
+        paths = {k: v for k, v in paths_.items()}
+        NR = len(racks)
+        ocs_id = 0
+        for i in range(NR):
+            for j in range(i + 1, NR):
+                if ocs_states[ocs_id] == BAR:
+                    rack1 = racks[i]
+                    rack2 = racks[j]
+                    for k in range(2):
+                        group1 = rack1[k]
+                        group2 = rack2[k]
+                        # print(f'path {group1} {group2} {paths[(group1, group2)]} -> ', end='')
+                        paths[(group1, group2)] = group2
+                        paths[(group2, group1)] = group1
+                        # print(f'path {group1} {group2} {paths[(group1, group2)]}')
+                ocs_id += 1 # use the equation if q >= 5
+        return paths
+    paths = reconfigure(ocs_states)
+    cost = compute_cost(matrix, paths)
+    # print(cost)
+    return cost, cost_no_reconfig
+                        
+for ts in range(N):
+    intergroup_process_ts(ts)
 
 def process_ts(ts):
     matrix = np.zeros((num_groups, num_groups))
@@ -225,3 +307,17 @@ show_report(curr_cost, curr_config)
 #     random_cost += ts_costs[i][config]
 #     random_path.append(config)
 # show_report(random_cost, random_path)
+
+
+print("\nIntergroup Reconfiguration strategy:")
+# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig
+with mp.Pool(processes=32) as pool:
+    ts_costs = pool.map(intergroup_process_ts, range(N))
+
+total_cost = sum([x[0] for x in ts_costs])
+print(f"cost with reconfig every {interval}s", total_cost)
+total_cost_no_reconfig = sum([x[1] for x in ts_costs])
+print(f"cost without reconfig", total_cost_no_reconfig)
+print("cost without reconfig vs reconfig")
+print("  abs improvement:", total_cost_no_reconfig - total_cost)
+print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)

@@ -116,9 +116,12 @@ def intergroup_process_ts(ts):
     # Step 2. Compute the OCS state of each sub-matrix
     ocs_states = []
     for sub_matrix in sub_matrices:
-        # print(sub_matrix)
         ocs_states.append(ocs_state(sub_matrix))
-    print(ocs_states)
+        # print(sub_matrix)
+        # if ocs_states[-1] == BAR:
+        #     print("BAR")
+        # else:
+        #     print("CROSS")
     # Step 3. Reconfigure the cross-connection of OCSes
     def reconfigure(ocs_states):
         paths = {k: v for k, v in paths_.items()}

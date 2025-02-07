@@ -150,6 +150,7 @@ def intergroup_process_ts(ts):
     # print(cost)
     return cost, cost_no_reconfig
 
+num_lags = 3
 matrix_history = []
 
 def prediction_intergroup_process_ts(ts):
@@ -166,6 +167,8 @@ def prediction_intergroup_process_ts(ts):
     cost_no_reconfig = compute_cost(matrix, paths_)
     
     matrix_history.append(matrix)
+    if len(matrix_history) > num_lags + 1:
+        matrix_history.pop(0)
     
     def linear_regression_predict(matrices, p=3):
         from sklearn.linear_model import LinearRegression
@@ -201,11 +204,10 @@ def prediction_intergroup_process_ts(ts):
         
         return predicted_matrix
 
+    predicted_matrix = matrix
     if 1 < len(matrix_history):
         predicted_matrix = linear_regression_predict(np.array(matrix_history), len(matrix_history) - 1)
-        cost = intergroup_reconfig(predicted_matrix)
-    else:
-        cost = intergroup_reconfig(matrix)
+    cost = intergroup_reconfig(predicted_matrix)
     # print(cost)
     return cost, cost_no_reconfig
 

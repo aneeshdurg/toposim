@@ -145,9 +145,6 @@ def intergroup_process_ts(ts):
     cost = compute_cost(matrix, paths)
     # print(cost)
     return cost, cost_no_reconfig
-                        
-for ts in range(N):
-    intergroup_process_ts(ts)
 
 def process_ts(ts):
     matrix = np.zeros((num_groups, num_groups))
@@ -180,6 +177,8 @@ def process_ts(ts):
                 v = swap(v)
                 new_paths[(start, end)] = v
             paths = new_paths
+            
+        print(paths)
 
         combined_matrix = np.zeros((num_groups, num_groups), dtype=int)
         for src in range(6):

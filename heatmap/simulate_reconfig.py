@@ -81,15 +81,7 @@ def compute_cost(matrix, paths):
                     break
     return sum(sum(combined_matrix))
 
-def intergroup_process_ts(ts):
-    matrix = np.zeros((num_groups, num_groups))
-    with open(output_dir + f"/matrix-ts{ts}.txt") as f:
-        m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]
-        for i in range(num_groups):
-            for j in range(num_groups):
-                matrix[i][j] = m[i][j]
-                
-    cost_no_reconfig = compute_cost(matrix, paths_)
+def intergroup_reconfig(matrix):
     # Step 1. Split the matrix into sub-matrices for each OCS
     def split_matrix(matrix):
         sub_matrices = []
@@ -143,6 +135,77 @@ def intergroup_process_ts(ts):
         return paths
     paths = reconfigure(ocs_states)
     cost = compute_cost(matrix, paths)
+    return cost
+
+def intergroup_process_ts(ts):
+    matrix = np.zeros((num_groups, num_groups))
+    with open(output_dir + f"/matrix-ts{ts}.txt") as f:
+        m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]
+        for i in range(num_groups):
+            for j in range(num_groups):
+                matrix[i][j] = m[i][j]
+                
+    cost_no_reconfig = compute_cost(matrix, paths_)
+    cost = intergroup_reconfig(matrix)
+    # print(cost)
+    return cost, cost_no_reconfig
+
+matrix_history = []
+
+def prediction_intergroup_process_ts(ts):
+    # Used mathmatical model to predict the next traffic matrix:
+    # vector autoregression
+    
+    matrix = np.zeros((num_groups, num_groups))
+    with open(output_dir + f"/matrix-ts{ts}.txt") as f:
+        m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]
+        for i in range(num_groups):
+            for j in range(num_groups):
+                matrix[i][j] = m[i][j]
+    
+    cost_no_reconfig = compute_cost(matrix, paths_)
+    
+    matrix_history.append(matrix)
+    
+    def linear_regression_predict(matrices, p=3):
+        from sklearn.linear_model import LinearRegression
+        _, rows, cols = matrices.shape
+        predicted_matrix = np.zeros((rows, cols))
+
+        # For each element in the matrix
+        for i in range(rows):
+            for j in range(cols):
+                time_series = matrices[:, i, j]
+
+                # Create lagged features
+                X = []
+                y = []
+                
+                for k in range(p, len(time_series)):
+                    X.append(time_series[k-p:k])  # Use previous p values as features
+                    y.append(time_series[k])      # Use the next value as the target
+                
+                X = np.array(X)
+                y = np.array(y)
+                
+                # Fit the linear regression model
+                model = LinearRegression()
+                model.fit(X, y)
+
+                # Predict the next value
+                predicted_value = model.predict([time_series[-p:]])  # Use the last p values as input
+                predicted_matrix[i, j] = predicted_value[0]
+
+        # Convert to integers
+        predicted_matrix = predicted_matrix.astype(int)
+        
+        return predicted_matrix
+
+    if 1 < len(matrix_history):
+        predicted_matrix = linear_regression_predict(np.array(matrix_history), len(matrix_history) - 1)
+        cost = intergroup_reconfig(predicted_matrix)
+    else:
+        cost = intergroup_reconfig(matrix)
     # print(cost)
     return cost, cost_no_reconfig
 
@@ -178,8 +241,6 @@ def process_ts(ts):
                 new_paths[(start, end)] = v
             paths = new_paths
             
-        print(paths)
-
         combined_matrix = np.zeros((num_groups, num_groups), dtype=int)
         for src in range(6):
             for dst in range(6):
@@ -206,7 +267,7 @@ def process_ts(ts):
 
 
 with mp.Pool(processes=32) as pool:
-    ts_costs = pool.map(process_ts, range(N))
+    ts_costs = pool.map(process_ts, range(1, N))
 
 cost_per_config = sum(np.matrix(ts_costs))
 print(f"{cost_per_config=}")
@@ -314,7 +375,21 @@ show_report(curr_cost, curr_config)
 print("\nIntergroup Reconfiguration strategy:")
 # intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig at each timestamp
 with mp.Pool(processes=32) as pool:
-    ts_costs = pool.map(intergroup_process_ts, range(N))
+    ts_costs = pool.map(intergroup_process_ts, range(1, N))
+
+total_cost = sum([x[0] for x in ts_costs])
+print(f"cost with reconfig every {interval}s", total_cost)
+total_cost_no_reconfig = sum([x[1] for x in ts_costs])
+print(f"cost without reconfig", total_cost_no_reconfig)
+print("cost without reconfig vs reconfig")
+print("  abs improvement:", total_cost_no_reconfig - total_cost)
+print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
+
+print("\nIntergroup Reconfiguration strategy using linear regression:")
+# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig at each timestamp
+ts_costs = []
+for i in range(1, N):
+    ts_costs.append(prediction_intergroup_process_ts(i))
 
 total_cost = sum([x[0] for x in ts_costs])
 print(f"cost with reconfig every {interval}s", total_cost)

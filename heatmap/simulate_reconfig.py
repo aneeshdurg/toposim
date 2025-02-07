@@ -390,20 +390,34 @@ total_cost = 0
 for i in range(1, N):
     total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
 
-print(f"cost with optimal reconfig every {interval}s", total_cost_optimal)
-print(f"cost with reconfig every {interval}s", total_cost)
-print(f"cost without reconfig", total_cost_no_reconfig)
-print("cost without reconfig vs optimal reconfig")
-print("  abs improvement:", total_cost_no_reconfig - total_cost_optimal)
-print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig)
+# print(f"cost with optimal reconfig every {interval}s", total_cost_optimal)
+# print(f"cost with reconfig every {interval}s", total_cost)
+# print(f"cost without reconfig", total_cost_no_reconfig)
+# print("cost without reconfig vs optimal reconfig")
+# print("  abs improvement:", total_cost_no_reconfig - total_cost_optimal)
+# print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig)
 
-print(f"cost with reconfig every {interval}s", total_cost)
-print("cost without reconfig vs reconfig")
-print("  abs improvement:", total_cost_no_reconfig - total_cost)
-print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
-print("cost with optimal reconfig vs reconfig")
-print("  abs improvement:", total_cost_optimal - total_cost)
-print("  rel improvement:", 100 * (total_cost_optimal - total_cost) / total_cost_optimal)
+# print(f"cost with reconfig every {interval}s", total_cost)
+# print("cost without reconfig vs reconfig")
+# print("  abs improvement:", total_cost_no_reconfig - total_cost)
+# print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
+# print("cost with optimal reconfig vs reconfig")
+# print("  abs improvement:", total_cost_optimal - total_cost)
+# print("  rel improvement:", 100 * (total_cost_optimal - total_cost) / total_cost_optimal)
+
+optimal_vs_no_reconfig = total_cost_no_reconfig - total_cost_optimal
+optimal_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig
+optimal_vs_no_reconfig_percent = int(optimal_vs_no_reconfig_percent * 100) / 100
+optimal_vs_reconfig = total_cost - total_cost_optimal
+optimal_vs_reconfig_percent = 100 * (total_cost - total_cost_optimal) / total_cost
+optimal_vs_reconfig_percent = int(optimal_vs_reconfig_percent * 100) / 100
+reconfig_vs_no_reconfig = total_cost_no_reconfig - total_cost
+reconfig_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig
+reconfig_vs_no_reconfig_percent = int(reconfig_vs_no_reconfig_percent * 100) / 100
+
+
+print("cost,cost_optimal,cost_no_reconfig,optimal_vs_no_reconfig,optimal_vs_no_reconfig_percent,optimal_vs_reconfig,optimal_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
+print(f"{total_cost},{total_cost_optimal},{total_cost_no_reconfig},{optimal_vs_no_reconfig},{optimal_vs_no_reconfig_percent},{optimal_vs_reconfig},{optimal_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")
 
 # print("\nIntergroup Reconfiguration strategy using linear regression:")
 # ts_costs = []

@@ -370,12 +370,12 @@ show_report(curr_cost, curr_config)
 
 print("\nIntergroup Reconfiguration strategy:")
 
-matrix_history = [np.zeros((num_groups, num_groups)) for _ in range(N)]
-reconfig_results = [{} for _ in range(N)]
+matrix_history = [np.zeros((num_groups, num_groups)) for _ in range(N + 1)]
+reconfig_results = [{} for _ in range(N + 1)]
 reconfig_results[0] = {k: v for k, v in paths_.items()}
 
 with mp.Pool(processes=32) as pool:
-    results = pool.map(intergroup_process_ts, range(1, N))
+    results = pool.map(intergroup_process_ts, range(1, N + 1))
 
 for ts, matrix, paths in results:
     matrix_history[ts] = matrix
@@ -383,11 +383,11 @@ for ts, matrix, paths in results:
 
 total_cost_proactive = 0
 total_cost_no_reconfig = 0
-for i in range(N):
+for i in range(N + 1):
     total_cost_proactive += compute_cost(matrix_history[i], reconfig_results[i])
     total_cost_no_reconfig += compute_cost(matrix_history[i], paths_)
 total_cost = 0
-for i in range(1, N):
+for i in range(1, N + 1):
     total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
 
 # print(f"cost with proactive reconfig every {interval}s", total_cost_proactive)
@@ -415,6 +415,8 @@ reconfig_vs_no_reconfig = total_cost_no_reconfig - total_cost
 reconfig_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig
 reconfig_vs_no_reconfig_percent = int(reconfig_vs_no_reconfig_percent * 100) / 100
 
+import sys
+sys.stdout.flush()
 
 print("cost,cost_proactive,cost_no_reconfig,proactive_vs_no_reconfig,proactive_vs_no_reconfig_percent,proactive_vs_reconfig,proactive_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
 print(f"{total_cost},{total_cost_proactive},{total_cost_no_reconfig},{proactive_vs_no_reconfig},{proactive_vs_no_reconfig_percent},{proactive_vs_reconfig},{proactive_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")

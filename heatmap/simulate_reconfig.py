@@ -307,7 +307,7 @@ def show_report(cost, path):
     )
 
 
-print("\nOptimal Reconfiguration strategy:")
+print("\nProactive Reconfiguration strategy:")
 best_case = sum(min(x) for x in ts_costs)
 best_path = [np.argmin(x) for x in ts_costs]
 show_report(best_case, best_path)
@@ -381,43 +381,43 @@ for ts, matrix, paths in results:
     matrix_history[ts] = matrix
     reconfig_results[ts] = paths
 
-total_cost_optimal = 0
+total_cost_proactive = 0
 total_cost_no_reconfig = 0
 for i in range(N):
-    total_cost_optimal += compute_cost(matrix_history[i], reconfig_results[i])
+    total_cost_proactive += compute_cost(matrix_history[i], reconfig_results[i])
     total_cost_no_reconfig += compute_cost(matrix_history[i], paths_)
 total_cost = 0
 for i in range(1, N):
     total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
 
-# print(f"cost with optimal reconfig every {interval}s", total_cost_optimal)
+# print(f"cost with proactive reconfig every {interval}s", total_cost_proactive)
 # print(f"cost with reconfig every {interval}s", total_cost)
 # print(f"cost without reconfig", total_cost_no_reconfig)
-# print("cost without reconfig vs optimal reconfig")
-# print("  abs improvement:", total_cost_no_reconfig - total_cost_optimal)
-# print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig)
+# print("cost without reconfig vs proactive reconfig")
+# print("  abs improvement:", total_cost_no_reconfig - total_cost_proactive)
+# print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost_proactive) / total_cost_no_reconfig)
 
 # print(f"cost with reconfig every {interval}s", total_cost)
 # print("cost without reconfig vs reconfig")
 # print("  abs improvement:", total_cost_no_reconfig - total_cost)
 # print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
-# print("cost with optimal reconfig vs reconfig")
-# print("  abs improvement:", total_cost_optimal - total_cost)
-# print("  rel improvement:", 100 * (total_cost_optimal - total_cost) / total_cost_optimal)
+# print("cost with proactive reconfig vs reconfig")
+# print("  abs improvement:", total_cost_proactive - total_cost)
+# print("  rel improvement:", 100 * (total_cost_proactive - total_cost) / total_cost_proactive)
 
-optimal_vs_no_reconfig = total_cost_no_reconfig - total_cost_optimal
-optimal_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig
-optimal_vs_no_reconfig_percent = int(optimal_vs_no_reconfig_percent * 100) / 100
-optimal_vs_reconfig = total_cost - total_cost_optimal
-optimal_vs_reconfig_percent = 100 * (total_cost - total_cost_optimal) / total_cost
-optimal_vs_reconfig_percent = int(optimal_vs_reconfig_percent * 100) / 100
+proactive_vs_no_reconfig = total_cost_no_reconfig - total_cost_proactive
+proactive_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost_proactive) / total_cost_no_reconfig
+proactive_vs_no_reconfig_percent = int(proactive_vs_no_reconfig_percent * 100) / 100
+proactive_vs_reconfig = total_cost - total_cost_proactive
+proactive_vs_reconfig_percent = 100 * (total_cost - total_cost_proactive) / total_cost
+proactive_vs_reconfig_percent = int(proactive_vs_reconfig_percent * 100) / 100
 reconfig_vs_no_reconfig = total_cost_no_reconfig - total_cost
 reconfig_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig
 reconfig_vs_no_reconfig_percent = int(reconfig_vs_no_reconfig_percent * 100) / 100
 
 
-print("cost,cost_optimal,cost_no_reconfig,optimal_vs_no_reconfig,optimal_vs_no_reconfig_percent,optimal_vs_reconfig,optimal_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
-print(f"{total_cost},{total_cost_optimal},{total_cost_no_reconfig},{optimal_vs_no_reconfig},{optimal_vs_no_reconfig_percent},{optimal_vs_reconfig},{optimal_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")
+print("cost,cost_proactive,cost_no_reconfig,proactive_vs_no_reconfig,proactive_vs_no_reconfig_percent,proactive_vs_reconfig,proactive_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
+print(f"{total_cost},{total_cost_proactive},{total_cost_no_reconfig},{proactive_vs_no_reconfig},{proactive_vs_no_reconfig_percent},{proactive_vs_reconfig},{proactive_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")
 
 # print("\nIntergroup Reconfiguration strategy using linear regression:")
 # ts_costs = []

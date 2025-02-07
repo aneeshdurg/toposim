@@ -134,8 +134,7 @@ def intergroup_reconfig(matrix):
                 ocs_id += 1 # use the equation if q >= 5
         return paths
     paths = reconfigure(ocs_states)
-    cost = compute_cost(matrix, paths)
-    return cost
+    return paths
 
 def intergroup_process_ts(ts):
     matrix = np.zeros((num_groups, num_groups))
@@ -144,16 +143,10 @@ def intergroup_process_ts(ts):
         for i in range(num_groups):
             for j in range(num_groups):
                 matrix[i][j] = m[i][j]
-                
-    cost_no_reconfig = compute_cost(matrix, paths_)
-    cost = intergroup_reconfig(matrix)
-    # print(cost)
-    return cost, cost_no_reconfig
+    paths = intergroup_reconfig(matrix)
+    return ts, matrix, paths
 
-num_lags = 3
-matrix_history = []
-
-def prediction_intergroup_process_ts(ts):
+def prediction_intergroup_process_ts(ts, matrix_history, num_lags):
     # Used mathmatical model to predict the next traffic matrix:
     # vector autoregression
     
@@ -207,7 +200,8 @@ def prediction_intergroup_process_ts(ts):
     predicted_matrix = matrix
     if 1 < len(matrix_history):
         predicted_matrix = linear_regression_predict(np.array(matrix_history), len(matrix_history) - 1)
-    cost = intergroup_reconfig(predicted_matrix)
+    paths = intergroup_reconfig(predicted_matrix)
+    cost = compute_cost(predicted_matrix, paths)
     # print(cost)
     return cost, cost_no_reconfig
 
@@ -375,28 +369,53 @@ show_report(curr_cost, curr_config)
 
 
 print("\nIntergroup Reconfiguration strategy:")
-# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig at each timestamp
+
+matrix_history = [np.zeros((num_groups, num_groups)) for _ in range(N)]
+reconfig_results = [{} for _ in range(N)]
+reconfig_results[0] = {k: v for k, v in paths_.items()}
+
 with mp.Pool(processes=32) as pool:
-    ts_costs = pool.map(intergroup_process_ts, range(1, N))
+    results = pool.map(intergroup_process_ts, range(1, N))
 
-total_cost = sum([x[0] for x in ts_costs])
-print(f"cost with reconfig every {interval}s", total_cost)
-total_cost_no_reconfig = sum([x[1] for x in ts_costs])
-print(f"cost without reconfig", total_cost_no_reconfig)
-print("cost without reconfig vs reconfig")
-print("  abs improvement:", total_cost_no_reconfig - total_cost)
-print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
+for ts, matrix, paths in results:
+    matrix_history[ts] = matrix
+    reconfig_results[ts] = paths
 
-print("\nIntergroup Reconfiguration strategy using linear regression:")
-# intergroup_proccess_ts returns a array of two elements, the first element is the cost with reconfig, the second element is the cost without reconfig at each timestamp
-ts_costs = []
+total_cost_optimal = 0
+total_cost_no_reconfig = 0
+for i in range(N):
+    total_cost_optimal += compute_cost(matrix_history[i], reconfig_results[i])
+    total_cost_no_reconfig += compute_cost(matrix_history[i], paths_)
+total_cost = 0
 for i in range(1, N):
-    ts_costs.append(prediction_intergroup_process_ts(i))
+    total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
 
-total_cost = sum([x[0] for x in ts_costs])
+print(f"cost with optimal reconfig every {interval}s", total_cost_optimal)
 print(f"cost with reconfig every {interval}s", total_cost)
-total_cost_no_reconfig = sum([x[1] for x in ts_costs])
 print(f"cost without reconfig", total_cost_no_reconfig)
+print("cost without reconfig vs optimal reconfig")
+print("  abs improvement:", total_cost_no_reconfig - total_cost_optimal)
+print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost_optimal) / total_cost_no_reconfig)
+
+print(f"cost with reconfig every {interval}s", total_cost)
 print("cost without reconfig vs reconfig")
 print("  abs improvement:", total_cost_no_reconfig - total_cost)
 print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)
+print("cost with optimal reconfig vs reconfig")
+print("  abs improvement:", total_cost_optimal - total_cost)
+print("  rel improvement:", 100 * (total_cost_optimal - total_cost) / total_cost_optimal)
+
+# print("\nIntergroup Reconfiguration strategy using linear regression:")
+# ts_costs = []
+# matrix_history = []
+# num_lags = 3
+# for i in range(1, N):
+#     ts_costs.append(prediction_intergroup_process_ts(i, matrix_history, num_lags))
+
+# total_cost = sum([x[0] for x in ts_costs])
+# print(f"cost with reconfig every {interval}s", total_cost)
+# total_cost_no_reconfig = sum([x[1] for x in ts_costs])
+# print(f"cost without reconfig", total_cost_no_reconfig)
+# print("cost without reconfig vs reconfig")
+# print("  abs improvement:", total_cost_no_reconfig - total_cost)
+# print("  rel improvement:", 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig)

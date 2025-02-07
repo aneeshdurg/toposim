@@ -307,7 +307,7 @@ def show_report(cost, path):
     )
 
 
-print("\nProactive Reconfiguration strategy:")
+print("\nOptimal Reconfiguration strategy:")
 best_case = sum(min(x) for x in ts_costs)
 best_path = [np.argmin(x) for x in ts_costs]
 show_report(best_case, best_path)

@@ -203,6 +203,7 @@ for i in range(1, len(ts_costs)):
     curr_cost += min_cost
     curr_config.append(min_config)
 show_report(curr_cost, curr_config)
+one_ocs_path = [k for k in curr_config]
 
 # print("\nWorst Reconfiguration strategy:")
 # worst_case = sum(max(x) for x in ts_costs)
@@ -217,11 +218,18 @@ for i in range(1, len(ts_costs)):
     curr_config.append(np.argmin(ts_costs[i]))
 show_report(curr_cost, curr_config)
 
-# print("\nRandom Reconfiguration strategy:")
-# random_cost = 0
-# random_path = []
-# for i in range(len(ts_costs)):
-#     config = random.randint(0, len(ts_costs[0]) - 1)
-#     random_cost += ts_costs[i][config]
-#     random_path.append(config)
-# show_report(random_cost, random_path)
+print("\nRandom Reconfiguration strategy:")
+random_cost = 0
+random_path = []
+for i in range(len(ts_costs)):
+    config = random.randint(0, len(ts_costs[0]) - 1)
+    random_cost += ts_costs[i][config]
+    random_path.append(config)
+show_report(random_cost, random_path)
+
+print('paths', 1 - sum(np.array(best_path) == np.array(one_ocs_path)) / len(best_path))
+total_diff = 0
+for i in range(len(best_path)):
+    if best_path[i] != one_ocs_path[i]:
+        total_diff += ts_costs[i][best_path[i]] - ts_costs[i][one_ocs_path[i]]
+print(total_diff)

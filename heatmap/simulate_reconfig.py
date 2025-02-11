@@ -340,7 +340,8 @@ def compute_cost(matrix, paths):
     return sum(sum(combined_matrix))
 
 def intergroup_reconfig(matrix):
-    topo = Topology(copy.deepcopy(ocs))
+    ocs = [OCS((r0, r1)), OCS((r0, r2)), OCS((r1, r2))]
+    topo = Topology(ocs)
     # Step 1. Split the matrix into sub-matrices for each OCS
     def split_matrix(matrix):
         sub_matrices = []
@@ -396,7 +397,8 @@ print("\nIntergroup Reconfiguration strategy:")
 
 matrix_history = [np.zeros((num_groups, num_groups)) for _ in range(N + 1)]
 reconfig_results = [{} for _ in range(N + 1)]
-static_topo = Topology(copy.deepcopy(ocs))
+ocs = [OCS((r0, r1)), OCS((r0, r2)), OCS((r1, r2))]
+static_topo = Topology(ocs)
 reconfig_results[0] = static_topo.paths
 
 with mp.Pool(processes=32) as pool:

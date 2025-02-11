@@ -416,17 +416,36 @@ for i in range(1, N + 1):
     total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
 
 proactive_vs_no_reconfig = total_cost_no_reconfig - total_cost_proactive
-proactive_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost_proactive) / total_cost_no_reconfig
+proactive_vs_no_reconfig_percent = 100 * (proactive_vs_no_reconfig) / total_cost_no_reconfig
 proactive_vs_no_reconfig_percent = int(proactive_vs_no_reconfig_percent * 100) / 100
-proactive_vs_reconfig = total_cost - total_cost_proactive
-proactive_vs_reconfig_percent = 100 * (total_cost - total_cost_proactive) / total_cost
-proactive_vs_reconfig_percent = int(proactive_vs_reconfig_percent * 100) / 100
+reconfig_vs_proactive = total_cost_proactive - total_cost
+reconfig_vs_proactive_percent = 100 * (reconfig_vs_proactive) / total_cost_proactive
+reconfig_vs_proactive_percent = int(reconfig_vs_proactive_percent * 100) / 100
 reconfig_vs_no_reconfig = total_cost_no_reconfig - total_cost
-reconfig_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig
+reconfig_vs_no_reconfig_percent = 100 * (reconfig_vs_no_reconfig) / total_cost_no_reconfig
 reconfig_vs_no_reconfig_percent = int(reconfig_vs_no_reconfig_percent * 100) / 100
+proactive_vs_best = best_case - total_cost_proactive
+proactive_vs_best_percent = 100 * (proactive_vs_best) / best_case
+proactive_vs_best_percent = int(proactive_vs_best_percent * 100) / 100
+no_reconfig_vs_best = best_case - total_cost_no_reconfig
+no_reconfig_vs_best_percent = 100 * (no_reconfig_vs_best) / best_case
+no_reconfig_vs_best_percent = int(no_reconfig_vs_best_percent * 100) / 100
+reconfig_vs_best = best_case - total_cost
+reconfig_vs_best_percent = 100 * (reconfig_vs_best) / best_case
+reconfig_vs_best_percent = int(reconfig_vs_best_percent * 100) / 100
+
 
 import sys
+from prettytable import PrettyTable
 sys.stdout.flush()
 
-print("cost,cost_proactive,cost_no_reconfig,proactive_vs_no_reconfig,proactive_vs_no_reconfig_percent,proactive_vs_reconfig,proactive_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
-print(f"{total_cost},{total_cost_proactive},{total_cost_no_reconfig},{proactive_vs_no_reconfig},{proactive_vs_no_reconfig_percent},{proactive_vs_reconfig},{proactive_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")
+# Make a table to report the results of the intergroup reconfiguration by comparing with the best case, no reconfiguration, and proactive reconfiguration
+table = PrettyTable()
+table.field_names = ["Strategy", "Total Cost", "Improvement vs Best", "Improvement vs Static", "Improvement vs Proactive"]
+
+table.add_row(["Best", best_case, "-", "-", "-"])
+table.add_row(["Static", total_cost_no_reconfig, f"{no_reconfig_vs_best} ({no_reconfig_vs_best_percent}%)", "-", "-"])
+table.add_row(["Proactive", total_cost_proactive, f"{proactive_vs_best} ({proactive_vs_best_percent}%)", f"{proactive_vs_no_reconfig} ({proactive_vs_no_reconfig_percent}%)", "-"])
+table.add_row(["Heuristic", total_cost, f"{reconfig_vs_best} ({reconfig_vs_best_percent}%)", f"{reconfig_vs_no_reconfig} ({reconfig_vs_no_reconfig_percent}%)", f"{reconfig_vs_proactive} ({reconfig_vs_proactive_percent}%)"])
+
+print(table)

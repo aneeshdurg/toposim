@@ -5,6 +5,7 @@ import argparse
 import os
 import multiprocessing as mp
 import random
+import copy
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -153,9 +154,8 @@ r0 = Rack((n0, n3))
 r1 = Rack((n1, n4))
 r2 = Rack((n2, n5))
 
-ocs = [OCS((r0, r1)), OCS((r0, r2)), OCS((r1, r2))]
-
 def process_ts(ts):
+    ocs = [OCS((r0, r1)), OCS((r0, r2)), OCS((r1, r2))]
     tp = Topology(ocs)
 
     matrix = np.zeros((num_groups, num_groups))
@@ -317,3 +317,116 @@ for i in range(len(best_path)):
     if best_path[i] != one_ocs_path[i]:
         total_diff += ts_costs[i][best_path[i]] - ts_costs[i][one_ocs_path[i]]
 print(total_diff)
+
+
+##### Intergroup reconfiguration #####
+
+def compute_cost(matrix, paths):
+    combined_matrix = np.zeros((num_groups, num_groups), dtype=int)
+    for src in range(num_groups):
+        for dst in range(num_groups):
+            if src == dst:
+                # print(src, dst, "+", src, dst)
+                combined_matrix[src][dst] += matrix[src][dst]
+                continue
+            curr = src
+            while True:
+                next_hop = paths[(curr, dst)]
+                # print(curr, next_hop, "+", src, dst)
+                combined_matrix[curr][next_hop] += matrix[src][dst]
+                curr = next_hop
+                if curr == dst:
+                    break
+    return sum(sum(combined_matrix))
+
+def intergroup_reconfig(matrix):
+    topo = Topology(copy.deepcopy(ocs))
+    # Step 1. Split the matrix into sub-matrices for each OCS
+    def split_matrix(matrix):
+        sub_matrices = []
+        num_ocses = len(topo.ocss)
+        for i in range(num_ocses):
+            rack1 = topo.ocss[i].rack[0]
+            rack2 = topo.ocss[i].rack[1]
+            sub_matrix = np.zeros((len(rack1.nodes), len(rack2.nodes)))
+            for i, g1 in enumerate(rack1.nodes):
+                for j, g2 in enumerate(rack2.nodes):
+                    # print(f'{g1} {g2} {rack1[g1]} {rack2[g2]} {matrix[rack1[g1]][rack2[g2]]} {matrix[rack2[g2]][rack1[g1]]}')
+                    sub_matrix[i][j] += matrix[g1.id_][g2.id_]
+                    sub_matrix[i][j] += matrix[g2.id_][g1.id_]
+            sub_matrices.append(sub_matrix)
+        return sub_matrices
+            
+    # print(matrix)
+    sub_matrices = split_matrix(matrix)
+    CROSS = False
+    BAR = True
+    def ocs_state(matrix):
+        return BAR if matrix[0][0] + matrix[1][1] > matrix[0][1] + matrix[1][0] else CROSS
+    # Step 2. Compute the OCS state of each sub-matrix
+    ocs_states = []
+    for sub_matrix in sub_matrices:
+        ocs_states.append(ocs_state(sub_matrix))
+        # print(sub_matrix)
+        # if ocs_states[-1] == BAR:
+        #     print("BAR")
+        # else:
+        #     print("CROSS")
+    # Step 3. Reconfigure the cross-connection of OCSes
+    # print("==== Original path ====")
+    # print(topo.paths)
+    topo.set_ocs_states(ocs_states)
+    # print("==== Reconfigured path ====")
+    # print(topo.paths)
+    return topo.paths
+
+def intergroup_process_ts(ts):
+    matrix = np.zeros((num_groups, num_groups))
+    with open(output_dir + f"/matrix-ts{ts}.txt") as f:
+        m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]
+        for i in range(num_groups):
+            for j in range(num_groups):
+                matrix[i][j] = m[i][j]
+    paths = intergroup_reconfig(matrix)
+    return ts, matrix, paths
+
+
+
+print("\nIntergroup Reconfiguration strategy:")
+
+matrix_history = [np.zeros((num_groups, num_groups)) for _ in range(N + 1)]
+reconfig_results = [{} for _ in range(N + 1)]
+static_topo = Topology(copy.deepcopy(ocs))
+reconfig_results[0] = static_topo.paths
+
+with mp.Pool(processes=32) as pool:
+    results = pool.map(intergroup_process_ts, range(1, N + 1))
+
+for ts, matrix, paths in results:
+    matrix_history[ts] = matrix
+    reconfig_results[ts] = paths
+
+total_cost_proactive = 0
+total_cost_no_reconfig = 0
+for i in range(N + 1):
+    total_cost_proactive += compute_cost(matrix_history[i], reconfig_results[i])
+    total_cost_no_reconfig += compute_cost(matrix_history[i], static_topo.paths)
+total_cost = 0
+for i in range(1, N + 1):
+    total_cost += compute_cost(matrix_history[i], reconfig_results[i - 1])
+
+proactive_vs_no_reconfig = total_cost_no_reconfig - total_cost_proactive
+proactive_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost_proactive) / total_cost_no_reconfig
+proactive_vs_no_reconfig_percent = int(proactive_vs_no_reconfig_percent * 100) / 100
+proactive_vs_reconfig = total_cost - total_cost_proactive
+proactive_vs_reconfig_percent = 100 * (total_cost - total_cost_proactive) / total_cost
+proactive_vs_reconfig_percent = int(proactive_vs_reconfig_percent * 100) / 100
+reconfig_vs_no_reconfig = total_cost_no_reconfig - total_cost
+reconfig_vs_no_reconfig_percent = 100 * (total_cost_no_reconfig - total_cost) / total_cost_no_reconfig
+reconfig_vs_no_reconfig_percent = int(reconfig_vs_no_reconfig_percent * 100) / 100
+
+import sys
+sys.stdout.flush()
+
+print("cost,cost_proactive,cost_no_reconfig,proactive_vs_no_reconfig,proactive_vs_no_reconfig_percent,proactive_vs_reconfig,proactive_vs_reconfig_percent,reconfig_vs_no_reconfig,reconfig_vs_no_reconfig_percent")
+print(f"{total_cost},{total_cost_proactive},{total_cost_no_reconfig},{proactive_vs_no_reconfig},{proactive_vs_no_reconfig_percent},{proactive_vs_reconfig},{proactive_vs_reconfig_percent},{reconfig_vs_no_reconfig},{reconfig_vs_no_reconfig_percent}")

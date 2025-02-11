@@ -154,10 +154,10 @@ r1 = Rack((n1, n4))
 r2 = Rack((n2, n5))
 
 ocs = [OCS((r0, r1)), OCS((r0, r2)), OCS((r1, r2))]
-tp = Topology(ocs)
-
 
 def process_ts(ts):
+    tp = Topology(ocs)
+
     matrix = np.zeros((num_groups, num_groups))
     with open(output_dir + f"/matrix-ts{ts}.txt") as f:
         m = [[int(x.strip()) for x in l.split()] for l in f.readlines()]

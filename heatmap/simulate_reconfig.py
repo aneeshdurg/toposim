@@ -202,7 +202,7 @@ def process_ts(ts):
 
 
 with mp.Pool(processes=32) as pool:
-    ts_costs = pool.map(process_ts, range(N))
+    ts_costs = pool.map(process_ts, range(N + 1))
 
 cost_per_config = sum(np.matrix(ts_costs))
 print(f"{cost_per_config=}")
